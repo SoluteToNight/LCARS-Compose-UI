@@ -1,0 +1,27 @@
+*.iml
+.DS_Store
+
+# Local IDE / machine state
+.idea/
+.kotlin/
+local.properties
+.playwright-mcp/
+
+# Gradle / Android build output
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Node reference project output
+**/node_modules/
+**/dist/
+
+# Visual reference files are kept locally only.
+/example/
+
+# Excluded project planning/reference docs
+/TODO.md
+/LCARS组件库.md
