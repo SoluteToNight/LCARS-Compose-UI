@@ -9,7 +9,7 @@ Chinese version: [COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md).
 Place LCARS components under `LcarsTheme`. The theme provides LCARS-specific color, typography, and spacing tokens.
 
 ```kotlin
-LcarsTheme {
+LcarsTheme(style = LcarsStyle.ClassicUltra) {
     LcarsFramePanel(title = "sensor deck") {
         LcarsStatusLight(label = "sensor lock", active = true)
         LcarsProgressBar(progress = 0.64f, label = "reactor balance")
@@ -25,11 +25,32 @@ Purpose: provides LCARS color, typography, and spacing values for the component 
 
 Main pieces:
 
+- `LcarsStyle`: predefined style token sets. Available values are `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, and `NemesisBlueUltra`.
 - `LcarsColors`: LCARS palette, including amber, light blue, violet, alert red, tactical green, and black surfaces.
 - `LcarsTypography`: text styles for headers, buttons, telemetry, and small labels.
 - `LcarsSpacing`: standard gap, button minimum size, bar height, elbow thickness, and related layout values.
 
 Use for: app roots, previews, and isolated component examples.
+
+Style application:
+
+```kotlin
+LcarsTheme(style = LcarsStyle.LowerDecks) {
+    AppContent()
+}
+```
+
+Explicit tokens override style defaults:
+
+```kotlin
+LcarsTheme(
+    style = LcarsStyle.NemesisBlueUltra,
+    colors = customColors,
+    spacing = customSpacing,
+) {
+    AppContent()
+}
+```
 
 ### `LcarsAdaptiveTheme`
 
@@ -42,6 +63,8 @@ Behavior:
 - Text keeps the default 1x logical resolution and existing `sp` sizes; the adaptive theme does not additionally scale, shrink, or resample typography.
 
 Use for: app roots, demo roots, and screens that should automatically switch LCARS sizing tokens across portrait and landscape.
+
+`LcarsAdaptiveTheme` accepts the same `style`, `colors`, `typography`, and `spacing` inputs as `LcarsTheme`; adaptive sizing is applied after the style spacing is resolved.
 
 ## Geometry Primitives
 

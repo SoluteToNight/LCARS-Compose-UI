@@ -41,6 +41,7 @@ fun LcarsAppScaffold(
             endCap = true,
             label = title,
             labelAlign = LcarsLabelAlign.End,
+            labelColor = colors.a1,
         )
         Row(
             modifier = Modifier
@@ -61,11 +62,12 @@ fun LcarsAppScaffold(
         }
         if (footerLabel != null) {
             LcarsBar(
-                color = colors.a7,
+                color = colors.butterscotch,
                 height = (LocalLcarsSpacing.current.barHeight / 2).coerceAtLeast(8.dp),
                 endCap = true,
                 label = footerLabel,
                 labelAlign = LcarsLabelAlign.End,
+                labelColor = colors.a1,
             )
         }
     }
@@ -104,6 +106,7 @@ fun LcarsPaddScaffold(
                 endCap = true,
                 label = title,
                 labelAlign = LcarsLabelAlign.End,
+                labelColor = colors.a1,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -121,6 +124,7 @@ fun LcarsPaddScaffold(
                 endCap = true,
                 label = footerLabel,
                 labelAlign = LcarsLabelAlign.End,
+                labelColor = colors.a1,
             )
         }
     }
@@ -152,7 +156,7 @@ fun LcarsFramePanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.panel)
+            .background(colors.background)
             .padding(gap),
         verticalArrangement = Arrangement.spacedBy(gap),
     ) {
@@ -162,6 +166,7 @@ fun LcarsFramePanel(
             startCap = true,
             label = title,
             labelAlign = LcarsLabelAlign.Start,
+            labelColor = colors.a1,
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(gap),
@@ -169,11 +174,12 @@ fun LcarsFramePanel(
         )
         if (footerLabel != null) {
             LcarsBar(
-                color = colors.a7,
+                color = colors.butterscotch,
                 height = (LocalLcarsSpacing.current.barHeight / 3).coerceAtLeast(6.dp),
                 endCap = true,
                 label = footerLabel,
                 labelAlign = LcarsLabelAlign.End,
+                labelColor = colors.a1,
             )
         }
     }

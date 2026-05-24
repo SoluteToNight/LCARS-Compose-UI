@@ -9,7 +9,7 @@
 所有组件都应放在 `LcarsTheme` 下使用。主题提供 LCARS 颜色、字体和间距 token。
 
 ```kotlin
-LcarsTheme {
+LcarsTheme(style = LcarsStyle.ClassicUltra) {
     LcarsFramePanel(title = "sensor deck") {
         LcarsStatusLight(label = "sensor lock", active = true)
         LcarsProgressBar(progress = 0.64f, label = "reactor balance")
@@ -25,11 +25,32 @@ LcarsTheme {
 
 主要内容：
 
+- `LcarsStyle`：预设风格 token 集。当前包括 `ClassicUltra`、`LowerDecks`、`LowerDecksPadd` 和 `NemesisBlueUltra`。
 - `LcarsColors`：LCARS 色板，包括琥珀色、浅蓝、紫色、警报红、战术绿、黑色背景等。
 - `LcarsTypography`：标题、按钮、遥测、短标签文字样式。
 - `LcarsSpacing`：标准间距、按钮最小尺寸、条形高度、elbow 厚度等。
 
 适用场景：应用根节点、预览、独立组件示例。
+
+套用风格：
+
+```kotlin
+LcarsTheme(style = LcarsStyle.LowerDecks) {
+    AppContent()
+}
+```
+
+显式传入的 token 会覆盖风格默认值：
+
+```kotlin
+LcarsTheme(
+    style = LcarsStyle.NemesisBlueUltra,
+    colors = customColors,
+    spacing = customSpacing,
+) {
+    AppContent()
+}
+```
 
 ### `LcarsAdaptiveTheme`
 
@@ -42,6 +63,8 @@ LcarsTheme {
 - 字体保持默认一倍逻辑分辨率和原有 `sp` 大小；自适应主题不额外放大、缩小或重采样字体。
 
 适用场景：应用根节点、demo 根节点、需要横竖屏自动切换尺寸 token 的页面。
+
+`LcarsAdaptiveTheme` 接受和 `LcarsTheme` 相同的 `style`、`colors`、`typography`、`spacing` 参数；自适应尺寸会在风格间距解析后再应用。
 
 ## 基础几何组件
 

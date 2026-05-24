@@ -21,7 +21,37 @@ dependencies {
 
 ## 主题
 
-在 Compose 内容根部使用 `LcarsTheme`。它会提供 `LocalLcarsColors`、`LocalLcarsTypography` 和 `LocalLcarsSpacing`。
+在 Compose 内容根部使用 `LcarsTheme` 或 `LcarsAdaptiveTheme`。它们会提供 `LocalLcarsColors`、`LocalLcarsTypography` 和 `LocalLcarsSpacing`。
+
+套用视觉风格的最简单方式是传入 `LcarsStyle`：
+
+```kotlin
+LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
+    LcarsConsoleScaffold(
+        leftWingContent = { /* commands */ },
+        mainDeckContent = { /* readouts */ },
+    )
+}
+```
+
+当前可用风格：
+
+- `LcarsStyle.ClassicUltra`
+- `LcarsStyle.LowerDecks`
+- `LcarsStyle.LowerDecksPadd`
+- `LcarsStyle.NemesisBlueUltra`
+
+风格 token 会为主题下的所有 LCARS 组件设置默认颜色和间距。应用仍然可以显式覆盖：
+
+```kotlin
+LcarsTheme(
+    style = LcarsStyle.LowerDecks,
+    colors = customColors,
+    spacing = customSpacing,
+) {
+    AppContent()
+}
+```
 
 默认字体是 Antonio，一个开源窄体显示字体，使用 SIL Open Font License。应用可以通过传入自定义 `LcarsTypography` 来使用其他已授权的类 LCARS 字体。
 

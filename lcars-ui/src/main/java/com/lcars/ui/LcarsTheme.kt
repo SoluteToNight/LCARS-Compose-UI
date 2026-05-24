@@ -17,23 +17,30 @@ import androidx.compose.ui.unit.sp
 @Immutable
 data class LcarsColors(
     val monoAmber: Color = Color(0xFFFF9900),
-    val auxiliaryTan: Color = Color(0xFFCC9966),
-    val lightBlue: Color = Color(0xFF99CCFF),
-    val violet: Color = Color(0xFF9999CC),
-    val tacticalGreen: Color = Color(0xFF33FF33),
-    val alertRed: Color = Color(0xFFFF3333),
+    val auxiliaryTan: Color = Color(0xFFFFBBAA),
+    val lightBlue: Color = Color(0xFF8899FF),
+    val violet: Color = Color(0xFFCC99FF),
+    val tacticalGreen: Color = Color(0xFF999933),
+    val alertRed: Color = Color(0xFFFF2220),
     val background: Color = Color(0xFF000000),
-    val panel: Color = Color(0xFF090909),
-    val text: Color = Color(0xFFFFFFFF),
-    val a1: Color = Color(0xFFEC943A),
-    val a2: Color = Color(0xFFEB9870),
-    val a3: Color = Color(0xFFC47D69),
-    val a4: Color = Color(0xFFD29A7F),
-    val a5: Color = Color(0xFFFAA41B),
-    val a6: Color = Color(0xFFC082A9),
-    val a7: Color = Color(0xFF9C698A),
-    val a8: Color = Color(0xFFB6A5D1),
-    val a9: Color = Color(0xFF8B72AA),
+    val panel: Color = Color(0xFF050505),
+    val text: Color = Color(0xFFF5F6FA),
+    val a1: Color = Color(0xFFFF8800),
+    val a2: Color = Color(0xFFFF9966),
+    val a3: Color = Color(0xFFFFAA90),
+    val a4: Color = Color(0xFFFFCC99),
+    val a5: Color = Color(0xFFFFAA00),
+    val a6: Color = Color(0xFFCC55FF),
+    val a7: Color = Color(0xFF9966FF),
+    val a8: Color = Color(0xFFDDBBFF),
+    val a9: Color = Color(0xFFCC5599),
+    val blue: Color = Color(0xFF5566FF),
+    val butterscotch: Color = Color(0xFFFF9966),
+    val almondCreme: Color = Color(0xFFFFBBAA),
+    val classicRed: Color = Color(0xFFCC4444),
+    val tomato: Color = Color(0xFFFF5555),
+    val gray: Color = Color(0xFF666688),
+    val spaceWhite: Color = Color(0xFFF5F6FA),
 )
 
 val LcarsDefaultFontFamily = FontFamily(
@@ -79,12 +86,12 @@ data class LcarsSpacing(
     val gapStandard: Dp = 4.dp,
     val gapLarge: Dp = 8.dp,
     val buttonMinWidth: Dp = 120.dp,
-    val buttonMinHeight: Dp = 58.dp,
-    val barHeight: Dp = 24.dp,
+    val buttonMinHeight: Dp = 56.dp,
+    val barHeight: Dp = 28.dp,
     val elbowThickness: Dp = 40.dp,
     val panelPadding: Dp = 12.dp,
-    val scaffoldControlWidth: Dp = 132.dp,
-    val commandRailWidth: Dp = 148.dp,
+    val scaffoldControlWidth: Dp = 150.dp,
+    val commandRailWidth: Dp = 154.dp,
     val commandRailCompactWidth: Dp = 116.dp,
 )
 
@@ -101,16 +108,17 @@ val LocalLcarsAdaptiveProfile = staticCompositionLocalOf { LcarsAdaptiveProfile(
 
 @Composable
 fun LcarsTheme(
-    colors: LcarsColors = LcarsColors(),
+    style: LcarsStyle = LcarsStyle.ClassicUltra,
+    colors: LcarsColors? = null,
     typography: LcarsTypography = LcarsTypography(),
-    spacing: LcarsSpacing = LcarsSpacing(),
+    spacing: LcarsSpacing? = null,
     adaptiveProfile: LcarsAdaptiveProfile = LcarsAdaptiveProfile(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-        LocalLcarsColors provides colors,
+        LocalLcarsColors provides (colors ?: style.colors()),
         LocalLcarsTypography provides typography,
-        LocalLcarsSpacing provides spacing,
+        LocalLcarsSpacing provides (spacing ?: style.spacing()),
         LocalLcarsAdaptiveProfile provides adaptiveProfile,
         content = content,
     )
@@ -118,9 +126,10 @@ fun LcarsTheme(
 
 @Composable
 fun LcarsAdaptiveTheme(
-    colors: LcarsColors = LcarsColors(),
+    style: LcarsStyle = LcarsStyle.ClassicUltra,
+    colors: LcarsColors? = null,
     typography: LcarsTypography = LcarsTypography(),
-    spacing: LcarsSpacing = LcarsSpacing(),
+    spacing: LcarsSpacing? = null,
     compactLandscapeHeight: Dp = 520.dp,
     compactWidth: Dp = 600.dp,
     content: @Composable () -> Unit,
@@ -132,10 +141,12 @@ fun LcarsAdaptiveTheme(
             compactWidth = compactWidth,
             compactLandscapeHeight = compactLandscapeHeight,
         )
+        val resolvedSpacing = spacing ?: style.spacing()
         LcarsTheme(
+            style = style,
             colors = colors,
             typography = typography,
-            spacing = resolveLcarsAdaptiveSpacing(spacing, profile),
+            spacing = resolveLcarsAdaptiveSpacing(resolvedSpacing, profile),
             adaptiveProfile = profile,
             content = content,
         )

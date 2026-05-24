@@ -322,13 +322,13 @@ private fun commandRailColor(
 ): Color = when (type) {
     LcarsCommandRailItemType.AlertBlock -> colors.alertRed
     LcarsCommandRailItemType.SpacerBlock -> if (index % 2 == 0) colors.a8 else colors.a7
-    LcarsCommandRailItemType.PassiveBlock -> if (index % 2 == 0) colors.violet else colors.a3
+    LcarsCommandRailItemType.PassiveBlock -> if (index % 2 == 0) colors.violet else colors.almondCreme
     LcarsCommandRailItemType.Command -> when (index % 5) {
-        0 -> colors.monoAmber
+        0 -> colors.classicRed
         1 -> colors.lightBlue
-        2 -> colors.a2
-        3 -> colors.auxiliaryTan
-        else -> colors.a8
+        2 -> colors.butterscotch
+        3 -> colors.almondCreme
+        else -> colors.a7
     }
 }
 

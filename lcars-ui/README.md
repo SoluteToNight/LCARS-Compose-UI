@@ -21,7 +21,37 @@ The artifact is published through JitPack as the release AAR of this module.
 
 ## Theme
 
-Use `LcarsTheme` at the root of your Compose content. It provides `LocalLcarsColors`, `LocalLcarsTypography`, and `LocalLcarsSpacing`.
+Use `LcarsTheme` or `LcarsAdaptiveTheme` at the root of your Compose content. They provide `LocalLcarsColors`, `LocalLcarsTypography`, and `LocalLcarsSpacing`.
+
+The simplest way to apply a visual style is to pass `LcarsStyle`:
+
+```kotlin
+LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
+    LcarsConsoleScaffold(
+        leftWingContent = { /* commands */ },
+        mainDeckContent = { /* readouts */ },
+    )
+}
+```
+
+Available styles:
+
+- `LcarsStyle.ClassicUltra`
+- `LcarsStyle.LowerDecks`
+- `LcarsStyle.LowerDecksPadd`
+- `LcarsStyle.NemesisBlueUltra`
+
+Style tokens set the default color and spacing values for all LCARS components under the theme. You can still override them explicitly:
+
+```kotlin
+LcarsTheme(
+    style = LcarsStyle.LowerDecks,
+    colors = customColors,
+    spacing = customSpacing,
+) {
+    AppContent()
+}
+```
 
 The default font is Antonio, a narrow open-source display family distributed under the SIL Open Font License. Apps can inject another licensed LCARS-like font by passing a custom `LcarsTypography`.
 

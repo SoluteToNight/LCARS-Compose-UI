@@ -24,10 +24,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lcars.ui.LcarsAlertBanner
 import com.lcars.ui.LcarsBar
 import com.lcars.ui.LcarsButton
@@ -62,12 +66,15 @@ import com.lcars.ui.LcarsStarChart
 import com.lcars.ui.LcarsStarChartMode
 import com.lcars.ui.LcarsStarCoords
 import com.lcars.ui.LcarsStatusLight
+import com.lcars.ui.LcarsStyle
 import com.lcars.ui.LcarsTargetScanner
 import com.lcars.ui.LcarsTelemetryEntry
 import com.lcars.ui.LcarsTelemetryPanel
 import com.lcars.ui.LcarsTelemetryStatus
 import com.lcars.ui.LcarsToggle
 import com.lcars.ui.LcarsTransmissionFrame
+import com.lcars.ui.LcarsAdaptiveTheme
+import com.lcars.ui.colors
 import com.lcars.ui.LocalLcarsColors
 import com.lcars.ui.LocalLcarsSpacing
 import com.lcars.ui.LocalLcarsTypography
@@ -75,6 +82,7 @@ import com.lcars.ui.LocalLcarsTypography
 private enum class DemoPage {
     Console,
     Catalog,
+    StyleShowcase,
 }
 
 @Composable
@@ -89,6 +97,16 @@ fun LcarsDemoScreen(modifier: Modifier = Modifier) {
         )
         return
     }
+    if (selectedPage == DemoPage.StyleShowcase.name) {
+        StyleShowcaseRoute(
+            systemAlert = systemAlert,
+            onToggleAlert = { systemAlert = !systemAlert },
+            onShowConsole = { selectedPage = DemoPage.Console.name },
+            onShowCatalog = { selectedPage = DemoPage.Catalog.name },
+            modifier = modifier,
+        )
+        return
+    }
 
     LcarsResponsiveScaffold(
         modifier = modifier,
@@ -97,6 +115,7 @@ fun LcarsDemoScreen(modifier: Modifier = Modifier) {
                 systemAlert = systemAlert,
                 onToggleAlert = { systemAlert = !systemAlert },
                 onShowCatalog = { selectedPage = DemoPage.Catalog.name },
+                onShowStyleShowcase = { selectedPage = DemoPage.StyleShowcase.name },
                 modifier = Modifier.fillMaxSize(),
             )
         },
@@ -105,6 +124,7 @@ fun LcarsDemoScreen(modifier: Modifier = Modifier) {
                 systemAlert = systemAlert,
                 onToggleAlert = { systemAlert = !systemAlert },
                 onShowCatalog = { selectedPage = DemoPage.Catalog.name },
+                onShowStyleShowcase = { selectedPage = DemoPage.StyleShowcase.name },
                 modifier = Modifier.fillMaxSize(),
             )
         },
@@ -113,6 +133,7 @@ fun LcarsDemoScreen(modifier: Modifier = Modifier) {
                 systemAlert = systemAlert,
                 onToggleAlert = { systemAlert = !systemAlert },
                 onShowCatalog = { selectedPage = DemoPage.Catalog.name },
+                onShowStyleShowcase = { selectedPage = DemoPage.StyleShowcase.name },
                 modifier = Modifier.fillMaxSize(),
             )
         },
@@ -124,6 +145,7 @@ private fun LcarsDemoLandscape(
     systemAlert: Boolean,
     onToggleAlert: () -> Unit,
     onShowCatalog: () -> Unit,
+    onShowStyleShowcase: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalLcarsColors.current
@@ -135,6 +157,7 @@ private fun LcarsDemoLandscape(
                 systemAlert = systemAlert,
                 onToggleAlert = onToggleAlert,
                 onShowCatalog = onShowCatalog,
+                onShowStyleShowcase = onShowStyleShowcase,
                 compact = false,
                 modifier = Modifier.fillMaxHeight(),
             )
@@ -147,6 +170,7 @@ private fun LcarsDemoLandscape(
                 endCap = true,
                 label = "telemetry main deck",
                 labelAlign = LcarsLabelAlign.End,
+                labelColor = colors.a1,
             )
             LcarsTelemetryPanel(
                 title = "primary telemetry matrix",
@@ -159,6 +183,7 @@ private fun LcarsDemoLandscape(
                 startCap = true,
                 label = "ui component catalogue",
                 labelAlign = LcarsLabelAlign.Start,
+                labelColor = colors.a1,
             )
             ComponentShowcase(
                 alerting = systemAlert,
@@ -193,6 +218,7 @@ private fun LcarsDemoCompactLandscape(
     systemAlert: Boolean,
     onToggleAlert: () -> Unit,
     onShowCatalog: () -> Unit,
+    onShowStyleShowcase: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalLcarsColors.current
@@ -219,6 +245,7 @@ private fun LcarsDemoCompactLandscape(
                 systemAlert = systemAlert,
                 onToggleAlert = onToggleAlert,
                 onShowCatalog = onShowCatalog,
+                onShowStyleShowcase = onShowStyleShowcase,
                 compact = true,
                 modifier = Modifier
                     .width(railWidth)
@@ -302,10 +329,719 @@ private fun LcarsDemoCompactLandscape(
 }
 
 @Composable
+private fun StyleShowcaseRoute(
+    systemAlert: Boolean,
+    onToggleAlert: () -> Unit,
+    onShowConsole: () -> Unit,
+    onShowCatalog: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var selectedStyleName by rememberSaveable { mutableStateOf(LcarsStyle.ClassicUltra.name) }
+    val selectedStyle = LcarsStyle.valueOf(selectedStyleName)
+
+    LcarsAdaptiveTheme(style = selectedStyle) {
+        LcarsStyleShowcaseScreen(
+            selectedStyle = selectedStyle,
+            onStyleSelected = { selectedStyleName = it.name },
+            systemAlert = systemAlert,
+            onToggleAlert = onToggleAlert,
+            onShowConsole = onShowConsole,
+            onShowCatalog = onShowCatalog,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun LcarsStyleShowcaseScreen(
+    selectedStyle: LcarsStyle,
+    onStyleSelected: (LcarsStyle) -> Unit,
+    systemAlert: Boolean,
+    onToggleAlert: () -> Unit,
+    onShowConsole: () -> Unit,
+    onShowCatalog: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+    val scrollState = rememberScrollState()
+    val spec = selectedStyle.showcaseSpec()
+
+    Column(
+        modifier = modifier
+            .background(colors.background)
+            .verticalScroll(scrollState)
+            .padding(spacing.gapStandard),
+        verticalArrangement = Arrangement.spacedBy(spacing.gapLarge),
+    ) {
+        LcarsStyleShowcaseHeader(
+            spec = spec,
+            systemAlert = systemAlert,
+            onToggleAlert = onToggleAlert,
+            onShowConsole = onShowConsole,
+            onShowCatalog = onShowCatalog,
+        )
+        LcarsStyleSelector(
+            selectedStyle = selectedStyle,
+            onStyleSelected = onStyleSelected,
+        )
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val stacked = maxWidth < 760.dp
+            if (stacked) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.gapLarge)) {
+                    LcarsStyleGeometryPanel(spec, onToggleAlert = onToggleAlert, onShowCatalog = onShowCatalog)
+                    LcarsStyleEffectsPanel(spec, systemAlert = systemAlert)
+                    LcarsStyleColorPanel(spec)
+                    LcarsStyleStatusPanel(spec, systemAlert = systemAlert)
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.gapLarge),
+                ) {
+                    Column(
+                        modifier = Modifier.weight(0.46f),
+                        verticalArrangement = Arrangement.spacedBy(spacing.gapLarge),
+                    ) {
+                        LcarsStyleGeometryPanel(spec, onToggleAlert = onToggleAlert, onShowCatalog = onShowCatalog)
+                        LcarsStyleStatusPanel(spec, systemAlert = systemAlert)
+                    }
+                    Column(
+                        modifier = Modifier.weight(0.54f),
+                        verticalArrangement = Arrangement.spacedBy(spacing.gapLarge),
+                    ) {
+                        LcarsStyleEffectsPanel(spec, systemAlert = systemAlert)
+                        LcarsStyleColorPanel(spec)
+                    }
+                }
+            }
+        }
+        LcarsBar(
+            color = colors.butterscotch,
+            height = 12.dp,
+            endCap = true,
+            label = spec.reference,
+            labelAlign = LcarsLabelAlign.End,
+            labelColor = colors.a1,
+        )
+    }
+}
+
+@Composable
+private fun LcarsStyleShowcaseHeader(
+    spec: StyleShowcaseSpec,
+    systemAlert: Boolean,
+    onToggleAlert: () -> Unit,
+    onShowConsole: () -> Unit,
+    onShowCatalog: () -> Unit,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compact = maxWidth < 680.dp
+        if (compact) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.gapStandard)) {
+                LcarsBar(
+                    color = colors.lightBlue,
+                    height = 28.dp,
+                    startCap = true,
+                    endCap = true,
+                    label = spec.title,
+                    labelAlign = LcarsLabelAlign.End,
+                    labelColor = colors.a1,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+                ) {
+                    LcarsButton(
+                        text = "home",
+                        color = colors.classicRed,
+                        shape = LcarsButtonShape.BlockStart,
+                        minWidth = 0.dp,
+                        minHeight = 48.dp,
+                        modifier = Modifier.weight(1f),
+                        onClick = onShowConsole,
+                    )
+                    LcarsButton(
+                        text = if (systemAlert) "reset" else "alert",
+                        color = colors.butterscotch,
+                        shape = LcarsButtonShape.Rectangle,
+                        alerting = systemAlert,
+                        minWidth = 0.dp,
+                        minHeight = 48.dp,
+                        modifier = Modifier.weight(1f),
+                        onClick = onToggleAlert,
+                    )
+                    LcarsButton(
+                        text = "catalog",
+                        color = colors.violet,
+                        shape = LcarsButtonShape.BlockEnd,
+                        minWidth = 0.dp,
+                        minHeight = 48.dp,
+                        modifier = Modifier.weight(1f),
+                        onClick = onShowCatalog,
+                    )
+                }
+                BasicText(
+                    text = spec.banner,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = LocalLcarsTypography.current.header.copy(
+                        color = colors.a1,
+                        textAlign = TextAlign.End,
+                        fontSize = 42.sp,
+                        lineHeight = 44.sp,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(172.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(176.dp)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+                ) {
+                    LcarsButton(
+                        text = "home",
+                        color = colors.classicRed,
+                        shape = LcarsButtonShape.BlockStart,
+                        minWidth = 0.dp,
+                        minHeight = 52.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onShowConsole,
+                    )
+                    LcarsButton(
+                        text = if (systemAlert) "reset alert" else "set alert",
+                        color = colors.butterscotch,
+                        shape = LcarsButtonShape.Rectangle,
+                        alerting = systemAlert,
+                        minWidth = 0.dp,
+                        minHeight = 52.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onToggleAlert,
+                    )
+                    LcarsButton(
+                        text = "catalog",
+                        color = colors.violet,
+                        shape = LcarsButtonShape.BlockStart,
+                        minWidth = 0.dp,
+                        minHeight = 52.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onShowCatalog,
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.Bottom,
+                ) {
+                    BasicText(
+                        text = spec.banner,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = LocalLcarsTypography.current.header.copy(
+                            color = colors.a1,
+                            textAlign = TextAlign.End,
+                            fontSize = 54.sp,
+                            lineHeight = 56.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    LcarsDataCascade(
+                        alerting = systemAlert,
+                        maxColumns = 6,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(84.dp),
+                    )
+                    LcarsBar(
+                        color = colors.lightBlue,
+                        height = 28.dp,
+                        startCap = true,
+                        endCap = true,
+                        label = spec.title,
+                        labelAlign = LcarsLabelAlign.End,
+                        labelColor = colors.a1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LcarsStyleSelector(
+    selectedStyle: LcarsStyle,
+    onStyleSelected: (LcarsStyle) -> Unit,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+    ) {
+        allShowcaseStyles.forEach { style ->
+            val active = style == selectedStyle
+            LcarsButton(
+                text = style.shortLabel(),
+                color = if (active) colors.a1 else style.colors().lightBlue,
+                shape = if (active) LcarsButtonShape.Pill else LcarsButtonShape.Rectangle,
+                minWidth = 0.dp,
+                minHeight = 42.dp,
+                modifier = Modifier.weight(1f),
+                onClick = { onStyleSelected(style) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LcarsStyleGeometryPanel(
+    spec: StyleShowcaseSpec,
+    onToggleAlert: () -> Unit,
+    onShowCatalog: () -> Unit,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+
+    LcarsFramePanel(title = "geometry language", footerLabel = spec.reference) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+        ) {
+            LcarsButton(
+                text = spec.primaryButton,
+                color = colors.classicRed,
+                shape = LcarsButtonShape.BlockStart,
+                minWidth = 0.dp,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+            LcarsButton(
+                text = spec.secondaryButton,
+                color = colors.butterscotch,
+                shape = LcarsButtonShape.Rectangle,
+                minWidth = 0.dp,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+            LcarsButton(
+                text = spec.tertiaryButton,
+                color = colors.lightBlue,
+                shape = LcarsButtonShape.BlockEnd,
+                minWidth = 0.dp,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+        ) {
+            LcarsButton(
+                text = spec.actionButton,
+                color = colors.a1,
+                shape = LcarsButtonShape.BlockStart,
+                minWidth = 0.dp,
+                minHeight = 48.dp,
+                modifier = Modifier.weight(1f),
+                onClick = onToggleAlert,
+            )
+            LcarsButton(
+                text = "catalog",
+                color = colors.almondCreme,
+                shape = LcarsButtonShape.BlockEnd,
+                minWidth = 0.dp,
+                minHeight = 48.dp,
+                modifier = Modifier.weight(1f),
+                onClick = onShowCatalog,
+            )
+        }
+        LcarsDividerGrid(
+            type = LcarsDividerGridType.Type2,
+            topHeight = 14.dp,
+            bottomHeight = 14.dp,
+        )
+    }
+}
+
+@Composable
+private fun LcarsStyleEffectsPanel(
+    spec: StyleShowcaseSpec,
+    systemAlert: Boolean,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+
+    LcarsFramePanel(title = "data and motion", footerLabel = spec.motionLabel) {
+        LcarsDataCascade(
+            alerting = systemAlert,
+            maxColumns = 8,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(96.dp),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+        ) {
+            LcarsScannerSweep(
+                running = true,
+                color = if (systemAlert) colors.alertRed else colors.violet,
+                sweepColor = if (systemAlert) colors.monoAmber else colors.lightBlue,
+                modifier = Modifier
+                    .weight(0.58f)
+                    .height(112.dp),
+            )
+            LcarsNumberMatrix(
+                rows = 5,
+                columns = 6,
+                running = true,
+                modifier = Modifier
+                    .weight(0.42f)
+                    .height(112.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LcarsStyleColorPanel(spec: StyleShowcaseSpec) {
+    val spacing = LocalLcarsSpacing.current
+
+    LcarsFramePanel(title = "style palette", footerLabel = "flat black base") {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val columns = if (maxWidth < 420.dp) 2 else 3
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.gapStandard)) {
+                spec.swatches.chunked(columns).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+                    ) {
+                        row.forEach { swatch ->
+                            LcarsStyleSwatch(
+                                swatch = swatch,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        repeat(columns - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LcarsStyleSwatch(
+    swatch: ClassicSwatch,
+    modifier: Modifier = Modifier,
+) {
+    BasicText(
+        text = swatch.label.uppercase(),
+        modifier = modifier
+            .height(54.dp)
+            .background(swatch.color)
+            .padding(end = 10.dp, bottom = 8.dp),
+        style = LocalLcarsTypography.current.labelSmall.copy(
+            color = Color.Black,
+            textAlign = TextAlign.End,
+        ),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun LcarsStyleStatusPanel(
+    spec: StyleShowcaseSpec,
+    systemAlert: Boolean,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+
+    LcarsFramePanel(title = "status strips", footerLabel = spec.statusLabel) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(148.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+        ) {
+            LcarsStyleSidePanel(spec.statusOne, colors.classicRed, Modifier.weight(0.9f))
+            LcarsStyleSidePanel(spec.statusTwo, colors.lightBlue, Modifier.weight(1.1f))
+            LcarsStyleSidePanel(
+                if (systemAlert) "13-alert" else "13-318",
+                colors.almondCreme,
+                Modifier.weight(1f),
+            )
+        }
+        LcarsStyleStatusList(systemAlert = systemAlert)
+    }
+}
+
+@Composable
+private fun LcarsStyleStatusList(systemAlert: Boolean) {
+    val colors = LocalLcarsColors.current
+    val typography = LocalLcarsTypography.current
+    val rows = listOf(
+        "subspace link: established",
+        "starfleet database: connected",
+        "quantum memory field: stable",
+        if (systemAlert) "optical data network: rerouting" else "optical data network: nominal",
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        rows.forEachIndexed { index, row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(14.dp)
+                        .background(if (index == 3) colors.almondCreme else colors.a1, androidx.compose.foundation.shape.CircleShape),
+                )
+                BasicText(
+                    text = row.uppercase(),
+                    style = typography.labelSmall.copy(
+                        color = if (index == 3) colors.almondCreme else colors.a1,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LcarsStyleSidePanel(
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(color)
+            .padding(end = 10.dp, bottom = 10.dp),
+        contentAlignment = Alignment.BottomEnd,
+    ) {
+        BasicText(
+            text = label.uppercase(),
+            style = LocalLcarsTypography.current.labelSmall.copy(
+                color = Color.Black,
+                textAlign = TextAlign.End,
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun LcarsDataCascade(
+    alerting: Boolean,
+    modifier: Modifier = Modifier,
+    maxColumns: Int = 8,
+) {
+    val colors = LocalLcarsColors.current
+    val typography = LocalLcarsTypography.current
+    val data = rememberLcarsCascadeData().take(maxColumns.coerceAtLeast(1))
+
+    Row(
+        modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        data.forEachIndexed { columnIndex, column ->
+            Column(
+                modifier = Modifier.weight(1f, fill = false),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                column.forEachIndexed { rowIndex, value ->
+                    val highlighted = alerting && (columnIndex + rowIndex) % 7 == 0
+                    BasicText(
+                        text = value.uppercase(),
+                        style = typography.labelSmall.copy(
+                            color = if (highlighted) colors.spaceWhite else colors.a1,
+                            textAlign = TextAlign.End,
+                            fontSize = 13.sp,
+                            lineHeight = 14.sp,
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class ClassicSwatch(
+    val label: String,
+    val color: Color,
+)
+
+private val allShowcaseStyles = listOf(
+    LcarsStyle.ClassicUltra,
+    LcarsStyle.LowerDecks,
+    LcarsStyle.LowerDecksPadd,
+    LcarsStyle.NemesisBlueUltra,
+)
+
+private data class StyleShowcaseSpec(
+    val title: String,
+    val banner: String,
+    val reference: String,
+    val primaryButton: String,
+    val secondaryButton: String,
+    val tertiaryButton: String,
+    val actionButton: String,
+    val motionLabel: String,
+    val statusLabel: String,
+    val statusOne: String,
+    val statusTwo: String,
+    val swatches: List<ClassicSwatch>,
+)
+
+private fun LcarsStyle.showcaseSpec(): StyleShowcaseSpec {
+    val colors = colors()
+    return when (this) {
+        LcarsStyle.ClassicUltra -> StyleShowcaseSpec(
+            title = "classic ultra style",
+            banner = "LCARS \u2022 47988",
+            reference = "classic-ultra.html",
+            primaryButton = "j-001",
+            secondaryButton = "r-002",
+            tertiaryButton = "r-003",
+            actionButton = "i50-72",
+            motionLabel = "cascade / scanner",
+            statusLabel = "section two sample",
+            statusOne = "11-1524",
+            statusTwo = "12-0730",
+            swatches = listOf(
+                ClassicSwatch("red", colors.classicRed),
+                ClassicSwatch("bluey", colors.lightBlue),
+                ClassicSwatch("violet", colors.violet),
+                ClassicSwatch("orange", colors.a1),
+                ClassicSwatch("butterscotch", colors.butterscotch),
+                ClassicSwatch("almond", colors.almondCreme),
+            ),
+        )
+        LcarsStyle.LowerDecks -> StyleShowcaseSpec(
+            title = "lower decks style",
+            banner = "LCARS 2380",
+            reference = "lower-decks.html",
+            primaryButton = "ops-01",
+            secondaryButton = "beta-02",
+            tertiaryButton = "nav-03",
+            actionButton = "alert",
+            motionLabel = "warm cascade / scanner",
+            statusLabel = "orange frame sample",
+            statusOne = "ld-2380",
+            statusTwo = "deck-04",
+            swatches = listOf(
+                ClassicSwatch("sunset", colors.classicRed),
+                ClassicSwatch("orange", colors.a1),
+                ClassicSwatch("daybreak", colors.a5),
+                ClassicSwatch("harvest", colors.a2),
+                ClassicSwatch("honey", colors.a3),
+                ClassicSwatch("butter", colors.almondCreme),
+            ),
+        )
+        LcarsStyle.LowerDecksPadd -> StyleShowcaseSpec(
+            title = "lower decks padd",
+            banner = "PADD \u2022 2380",
+            reference = "lower-decks-padd.html",
+            primaryButton = "padd",
+            secondaryButton = "scan",
+            tertiaryButton = "comm",
+            actionButton = "sync",
+            motionLabel = "cold padd readout",
+            statusLabel = "compact blue strips",
+            statusOne = "padd-01",
+            statusTwo = "link-24",
+            swatches = listOf(
+                ClassicSwatch("alpha", colors.lightBlue),
+                ClassicSwatch("arctic", colors.a2),
+                ClassicSwatch("snow", colors.a3),
+                ClassicSwatch("radio", colors.a1),
+                ClassicSwatch("cloud", colors.a7),
+                ClassicSwatch("rain", colors.a6),
+            ),
+        )
+        LcarsStyle.NemesisBlueUltra -> StyleShowcaseSpec(
+            title = "nemesis blue ultra",
+            banner = "LCARS \u2022 1701-E",
+            reference = "nemesis-blue-ultra.html",
+            primaryButton = "j-001",
+            secondaryButton = "r-002",
+            tertiaryButton = "r-003",
+            actionButton = "i50-72",
+            motionLabel = "blue ultra cascade",
+            statusLabel = "ultra status sample",
+            statusOne = "11-1524",
+            statusTwo = "12-0730",
+            swatches = listOf(
+                ClassicSwatch("evening", colors.a1),
+                ClassicSwatch("cool", colors.lightBlue),
+                ClassicSwatch("ghost", colors.a3),
+                ClassicSwatch("honey", colors.butterscotch),
+                ClassicSwatch("gray", colors.gray),
+                ClassicSwatch("moon", colors.almondCreme),
+            ),
+        )
+    }
+}
+
+private fun LcarsStyle.shortLabel(): String = when (this) {
+    LcarsStyle.ClassicUltra -> "classic"
+    LcarsStyle.LowerDecks -> "decks"
+    LcarsStyle.LowerDecksPadd -> "padd"
+    LcarsStyle.NemesisBlueUltra -> "nemesis"
+}
+
+@Composable
+private fun rememberLcarsCascadeData(): List<List<String>> = androidx.compose.runtime.remember {
+    listOf(
+        listOf("93", "1853", "24109", "7", "7024", "322"),
+        listOf("21509", "68417", "80", "2048", "319825", "46233"),
+        listOf("585101", "25403", "31219", "752", "0604", "21048"),
+        listOf("2107853", "12201972", "24487255", "30412", "98", "4024161"),
+        listOf("33", "56", "04", "69", "41", "15"),
+        listOf("0223", "688", "28471", "21366", "8654", "31"),
+        listOf("633", "51166", "41699", "6188", "15033", "21094"),
+        listOf("406822", "81205", "91007", "38357", "110", "2041"),
+    )
+}
+
+@Composable
 private fun LcarsDemoPortrait(
     systemAlert: Boolean,
     onToggleAlert: () -> Unit,
     onShowCatalog: () -> Unit,
+    onShowStyleShowcase: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalLcarsColors.current
@@ -394,6 +1130,16 @@ private fun LcarsDemoPortrait(
             minHeight = 48.dp,
             modifier = Modifier.fillMaxWidth(),
             onClick = onShowCatalog,
+        )
+
+        LcarsButton(
+            text = "classic ultra",
+            color = colors.violet,
+            shape = LcarsButtonShape.BlockEnd,
+            minWidth = 0.dp,
+            minHeight = 48.dp,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onShowStyleShowcase,
         )
 
         LcarsTelemetryPanel(
@@ -875,6 +1621,7 @@ private fun MainCommandRail(
     systemAlert: Boolean,
     onToggleAlert: () -> Unit,
     onShowCatalog: () -> Unit,
+    onShowStyleShowcase: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -912,6 +1659,7 @@ private fun MainCommandRail(
                     color = colors.auxiliaryTan,
                 ),
                 LcarsCommandRailItem("catalog", "catalog", color = colors.lightBlue),
+                LcarsCommandRailItem("style", if (compact) "style" else "classic", color = colors.violet),
                 LcarsCommandRailItem(
                     id = "wing-bus",
                     label = if (compact) "bus" else "wing bus",
@@ -933,6 +1681,7 @@ private fun MainCommandRail(
                 when (item.id) {
                     "alert" -> onToggleAlert()
                     "catalog" -> onShowCatalog()
+                    "style" -> onShowStyleShowcase()
                 }
             },
         )
