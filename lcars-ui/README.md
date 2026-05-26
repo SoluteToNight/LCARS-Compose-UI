@@ -36,6 +36,7 @@ LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
 
 Available styles:
 
+- `LcarsStyle.StandardPadd`
 - `LcarsStyle.ClassicUltra`
 - `LcarsStyle.LowerDecks`
 - `LcarsStyle.LowerDecksPadd`
@@ -63,6 +64,27 @@ The default font is Antonio, a narrow open-source display family distributed und
 - `LcarsFramePanel`: framed content section with LCARS title/footer bars.
 - `LcarsTelemetryPanel`: responsive telemetry readout grid.
 - `LcarsDataTable`: dense status table.
+
+## Phone PADD Variant
+
+The phone PADD variant is a compact handheld layout family inspired by the standard PADD references. It keeps clear LCARS traits while reducing decorative geometry density for portrait phones.
+
+- `LcarsPhonePaddTheme`: applies compact typography and spacing for phone PADD screens. It defaults to `LcarsStyle.StandardPadd`, but accepts any existing `LcarsStyle`.
+- `LcarsPhonePaddScaffold`: portrait phone shell with a compact header, optional side rail, content deck, footer controls, and status strip.
+- `LcarsPaddHeader`, `LcarsPaddSideRail`, `LcarsPaddStatusStrip`: PADD-specific structure primitives.
+- `LcarsPaddControl`, `LcarsPaddReadoutPanel`, `LcarsPaddDataLines`, `LcarsPaddMessage`: dense controls and readout surfaces for handheld PADD screens.
+
+Example:
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(title = "systems data 21-0071") {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(listOf("archive link nominal", "message buffer ready"))
+        }
+    }
+}
+```
 
 ## Dynamic Components
 
@@ -96,6 +118,7 @@ Alert effects use stepped keyframes rather than smooth fades.
 
 - `LcarsAppScaffold`: generic app shell with top bar, control rail, content deck, optional footer.
 - `LcarsPaddScaffold`: portrait-friendly PADD shell.
+- `LcarsPhonePaddScaffold`: phone portrait PADD shell with reduced decorative density.
 - `LcarsConsoleScaffold`: landscape console shell over `LcarsMainConsole`.
 
 ## Example

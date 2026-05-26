@@ -1012,6 +1012,7 @@ private fun LcarsStyle.showcaseSpec(): StyleShowcaseSpec {
                 ClassicSwatch("moon", colors.almondCreme),
             ),
         )
+        LcarsStyle.StandardPadd -> LcarsStyle.ClassicUltra.showcaseSpec()
     }
 }
 
@@ -1020,6 +1021,7 @@ private fun LcarsStyle.shortLabel(): String = when (this) {
     LcarsStyle.LowerDecks -> "decks"
     LcarsStyle.LowerDecksPadd -> "padd"
     LcarsStyle.NemesisBlueUltra -> "nemesis"
+    LcarsStyle.StandardPadd -> "standard"
 }
 
 @Composable

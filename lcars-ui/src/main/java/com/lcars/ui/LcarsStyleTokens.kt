@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 enum class LcarsStyle {
+    StandardPadd,
     ClassicUltra,
     LowerDecks,
     LowerDecksPadd,
@@ -11,6 +12,7 @@ enum class LcarsStyle {
 }
 
 fun LcarsStyle.colors(): LcarsColors = when (this) {
+    LcarsStyle.StandardPadd -> lcarsPhonePaddColors()
     LcarsStyle.ClassicUltra -> LcarsColors()
     LcarsStyle.LowerDecks -> LcarsColors(
         monoAmber = Color(0xFFFF9911),
@@ -93,6 +95,18 @@ fun LcarsStyle.colors(): LcarsColors = when (this) {
 }
 
 fun LcarsStyle.spacing(): LcarsSpacing = when (this) {
+    LcarsStyle.StandardPadd -> LcarsSpacing(
+        gapStandard = 4.dp,
+        gapLarge = 8.dp,
+        buttonMinWidth = 76.dp,
+        buttonMinHeight = 42.dp,
+        barHeight = 20.dp,
+        elbowThickness = 24.dp,
+        panelPadding = 8.dp,
+        scaffoldControlWidth = 96.dp,
+        commandRailWidth = 104.dp,
+        commandRailCompactWidth = 82.dp,
+    )
     LcarsStyle.ClassicUltra,
     LcarsStyle.NemesisBlueUltra -> LcarsSpacing()
     LcarsStyle.LowerDecks,

@@ -25,7 +25,7 @@ Purpose: provides LCARS color, typography, and spacing values for the component 
 
 Main pieces:
 
-- `LcarsStyle`: predefined style token sets. Available values are `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, and `NemesisBlueUltra`.
+- `LcarsStyle`: predefined style token sets. Available values are `StandardPadd`, `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, and `NemesisBlueUltra`.
 - `LcarsColors`: LCARS palette, including amber, light blue, violet, alert red, tactical green, and black surfaces.
 - `LcarsTypography`: text styles for headers, buttons, telemetry, and small labels.
 - `LcarsSpacing`: standard gap, button minimum size, bar height, elbow thickness, and related layout values.
@@ -65,6 +65,12 @@ Behavior:
 Use for: app roots, demo roots, and screens that should automatically switch LCARS sizing tokens across portrait and landscape.
 
 `LcarsAdaptiveTheme` accepts the same `style`, `colors`, `typography`, and `spacing` inputs as `LcarsTheme`; adaptive sizing is applied after the style spacing is resolved.
+
+### `LcarsPhonePaddTheme`
+
+Purpose: provides compact phone-PADD typography and spacing while still using the same LCARS color/style token system. It defaults to `LcarsStyle.StandardPadd`, the standard orange/violet handheld PADD style, but can apply `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, `NemesisBlueUltra`, or explicit custom colors to the same PADD components.
+
+Use for: isolated phone portrait PADD screens and demos that should not inherit the larger console geometry density.
 
 ## Geometry Primitives
 
@@ -324,6 +330,52 @@ Use for: tablet or desktop-sized LCARS pages.
 Purpose: PADD-style page shell for portrait and narrow layouts.
 
 Use for: phone portrait screens, handheld interfaces, and single-page tools.
+
+### `LcarsPhonePaddScaffold`
+
+Purpose: phone portrait PADD shell with a compact header, optional side rail, content deck, optional footer controls, and status strip. It is tuned for handheld PADD references with fewer decorative geometry blocks than the larger console layouts.
+
+Key parameters:
+
+- `title`: primary top status-strip label.
+- `registry`: compact header registry label.
+- `footerLabel`: optional bottom status-strip label.
+- `sideRail`: enables or hides the compact left rail.
+- `footer`: slot for bottom command controls.
+- `content`: vertical content deck.
+
+Use for: phone portrait PADD variants, mobile task screens, compact logs, and handheld data readouts.
+
+### Phone PADD Primitives
+
+Purpose: PADD-specific building blocks for composing handheld layouts without changing the existing LCARS primitives.
+
+Components:
+
+- `LcarsPaddHeader`: compact black readout header plus orange status strip.
+- `LcarsPaddSideRail`: sparse vertical PADD rail with a few colored blocks.
+- `LcarsPaddStatusStrip`: thin orange/violet status strip with optional embedded label.
+- `LcarsPaddControl`: compact command block with pill, left-cap, right-cap, and rectangle shapes.
+- `LcarsPaddReadoutPanel`: black bordered panel for dense text/data.
+- `LcarsPaddDataLines`: uppercase single-line telemetry/log text.
+- `LcarsPaddMessage`: centered large message panel, including alert presentation.
+
+Example:
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(
+        title = "systems data 21-0071",
+        registry = "uss raven - database 83-s28",
+    ) {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(
+                lines = listOf("archive link nominal", "message buffer ready"),
+            )
+        }
+    }
+}
+```
 
 ### `LcarsConsoleScaffold` / `LcarsMainConsole`
 

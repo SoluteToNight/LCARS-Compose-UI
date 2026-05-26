@@ -98,6 +98,24 @@ class LcarsComponentLogicTest {
     }
 
     @Test
+    fun standardPaddStyle_mapsToPhonePaddPaletteAndCompactSpacing() {
+        val colors = LcarsStyle.StandardPadd.colors()
+        val spacing = LcarsStyle.StandardPadd.spacing()
+
+        assertEquals(lcarsPhonePaddColors(), colors)
+        assertEquals(42.dp, spacing.buttonMinHeight)
+        assertEquals(20.dp, spacing.barHeight)
+        assertEquals(8.dp, spacing.panelPadding)
+    }
+
+    @Test
+    fun phonePaddMetrics_resolveForPortraitPhoneWidths() {
+        assertEquals(32.dp, resolveLcarsPhonePaddMetrics(width = 320.dp, height = 680.dp).railWidth)
+        assertEquals(38.dp, resolveLcarsPhonePaddMetrics(width = 390.dp, height = 820.dp).railWidth)
+        assertEquals(42.dp, resolveLcarsPhonePaddMetrics(width = 440.dp, height = 900.dp).railWidth)
+    }
+
+    @Test
     fun controls_resolveInteractionState() {
         assertEquals(
             LcarsSegmentState.Selected,

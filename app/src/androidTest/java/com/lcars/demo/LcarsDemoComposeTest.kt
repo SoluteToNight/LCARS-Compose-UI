@@ -57,6 +57,18 @@ class LcarsDemoComposeTest {
     }
 
     @Test
+    fun paddVariantNavigation_showsStandardPaddDemoAndStyleSwitcher() {
+        composeRule.setContent {
+            PaddVariantDemoScreen(onBack = {}, modifier = Modifier.fillMaxSize())
+        }
+
+        composeRule.onNodeWithText("USS RAVEN - DATABASE 83-S28").assertIsDisplayed()
+        composeRule.onNodeWithText("HANSEN FAMILY").assertIsDisplayed()
+        composeRule.onNodeWithText("STD").assertIsDisplayed()
+        composeRule.onNodeWithText("CLASSIC").assertIsDisplayed()
+    }
+
+    @Test
     fun toggle_changesCatalogState() {
         composeRule.setContent {
             DemoLcarsTheme {
@@ -86,8 +98,10 @@ class LcarsDemoComposeTest {
     @Test
     fun responsiveScaffold_selectsExpectedSlotForSize() {
         composeRule.setContent {
-            Box(modifier = Modifier.size(width = 1280.dp, height = 720.dp)) {
+            Box(modifier = Modifier.size(width = 320.dp, height = 240.dp)) {
                 LcarsResponsiveScaffold(
+                    compactWidth = 200.dp,
+                    compactLandscapeHeight = 100.dp,
                     portrait = { BasicText("PORTRAIT SLOT") },
                     compactLandscape = { BasicText("COMPACT SLOT") },
                     wideLandscape = { BasicText("WIDE SLOT") },

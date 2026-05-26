@@ -22,6 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".PaddVariantActivity"
+            android:exported="true"
+            android:label="LCARS PADD Variant"
+            android:theme="@style/Theme.LcarsUi" />
     </application>
 
 </manifest>

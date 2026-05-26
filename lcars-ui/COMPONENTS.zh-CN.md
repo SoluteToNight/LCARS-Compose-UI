@@ -25,7 +25,7 @@ LcarsTheme(style = LcarsStyle.ClassicUltra) {
 
 主要内容：
 
-- `LcarsStyle`：预设风格 token 集。当前包括 `ClassicUltra`、`LowerDecks`、`LowerDecksPadd` 和 `NemesisBlueUltra`。
+- `LcarsStyle`：预设风格 token 集。当前包括 `StandardPadd`、`ClassicUltra`、`LowerDecks`、`LowerDecksPadd` 和 `NemesisBlueUltra`。
 - `LcarsColors`：LCARS 色板，包括琥珀色、浅蓝、紫色、警报红、战术绿、黑色背景等。
 - `LcarsTypography`：标题、按钮、遥测、短标签文字样式。
 - `LcarsSpacing`：标准间距、按钮最小尺寸、条形高度、elbow 厚度等。
@@ -65,6 +65,12 @@ LcarsTheme(
 适用场景：应用根节点、demo 根节点、需要横竖屏自动切换尺寸 token 的页面。
 
 `LcarsAdaptiveTheme` 接受和 `LcarsTheme` 相同的 `style`、`colors`、`typography`、`spacing` 参数；自适应尺寸会在风格间距解析后再应用。
+
+### `LcarsPhonePaddTheme`
+
+功能：为手机 PADD 界面提供更紧凑的字体和间距，同时继续使用同一套 LCARS 颜色/风格 token。默认风格是 `LcarsStyle.StandardPadd`，对应 standard PADD 参考图中的橙色/紫色手持设备风格；也可以把 `ClassicUltra`、`LowerDecks`、`LowerDecksPadd`、`NemesisBlueUltra` 或自定义颜色应用到同一组 PADD 组件上。
+
+适用场景：独立手机竖屏 PADD 页面，以及不希望继承大型控制台几何密度的演示界面。
 
 ## 基础几何组件
 
@@ -324,6 +330,52 @@ LcarsTheme(
 功能：PADD 风格页面外壳，适合竖屏和窄屏。
 
 适用场景：手机竖屏、手持设备界面、单页工具。
+
+### `LcarsPhonePaddScaffold`
+
+功能：手机竖屏 PADD 外壳，包含紧凑头部、可选侧边轨、内容区、可选页脚控制和状态条。它面向手持 PADD 参考图，装饰性几何块密度低于大型 console 布局。
+
+主要参数：
+
+- `title`：顶部主状态条标签。
+- `registry`：紧凑头部注册/数据库标签。
+- `footerLabel`：可选底部状态条标签。
+- `sideRail`：是否显示紧凑左侧轨。
+- `footer`：底部命令控制 slot。
+- `content`：纵向内容区。
+
+适用场景：手机竖屏 PADD 变体、移动任务页面、紧凑日志和手持数据读数。
+
+### 手机 PADD 基础组件
+
+功能：用于组合手持设备布局的 PADD 专用构件，不改变已有 LCARS 基础组件。
+
+组件：
+
+- `LcarsPaddHeader`：紧凑黑色读数头部和橙色状态条。
+- `LcarsPaddSideRail`：由少量色块组成的稀疏竖向 PADD 侧轨。
+- `LcarsPaddStatusStrip`：细橙色/紫色状态条，可嵌入标签。
+- `LcarsPaddControl`：紧凑命令块，支持 pill、左端帽、右端帽和矩形。
+- `LcarsPaddReadoutPanel`：黑底描边高密度文本/数据面板。
+- `LcarsPaddDataLines`：大写单行遥测/日志文本。
+- `LcarsPaddMessage`：居中的大字消息面板，支持 alert 表现。
+
+示例：
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(
+        title = "systems data 21-0071",
+        registry = "uss raven - database 83-s28",
+    ) {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(
+                lines = listOf("archive link nominal", "message buffer ready"),
+            )
+        }
+    }
+}
+```
 
 ### `LcarsConsoleScaffold` / `LcarsMainConsole`
 

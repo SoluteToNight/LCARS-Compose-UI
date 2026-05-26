@@ -44,6 +44,11 @@ dependencies {
 ./gradlew.bat installDebug
 ```
 
+Android Studio 加载共享运行配置后会有两个 app 启动项：
+
+- `app`：启动原有响应式演示应用。
+- `PADD Variant`：通过 `PaddVariantActivity` 启动独立的手机竖屏 PADD 变体演示。
+
 单元测试和编译检查：
 
 ```powershell
@@ -58,7 +63,9 @@ dependencies {
 - 动态组件：告警横幅、状态灯、进度条、分段仪表、扫描扫线、读数滚动条。
 - 数据/显示组件：遥测面板、数据表、日志控制台、数字矩阵、星图坐标等。
 - 布局模板：app、PADD、console 和响应式脚手架。
+- 手机 PADD 变体组件：适配手持竖屏布局的紧凑 PADD scaffold、侧边轨、状态条、读数面板和控制块。
 - 演示应用：支持 portrait PADD、compact landscape、wide landscape 三种断点。
+- 独立 PADD 变体演示 Activity，不替换也不改变原有 launcher demo。
 
 ## 组件文档
 
@@ -88,6 +95,23 @@ LcarsTheme {
                 LcarsTelemetryEntry("fix", "high precision", LcarsTelemetryStatus.Normal),
             ),
         )
+    }
+}
+```
+
+手机 PADD 变体：
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(
+        title = "systems data 21-0071",
+        registry = "uss raven - database 83-s28",
+    ) {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(
+                lines = listOf("mobile interface ready", "archive link nominal"),
+            )
+        }
     }
 }
 ```

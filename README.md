@@ -44,6 +44,11 @@ Use a GitHub release tag, a short commit hash, or `master-SNAPSHOT` as the versi
 ./gradlew.bat installDebug
 ```
 
+Android Studio provides two app run targets when shared run configurations are loaded:
+
+- `app`: launches the original responsive demo app.
+- `PADD Variant`: launches the isolated phone portrait PADD variant demo through `PaddVariantActivity`.
+
 Unit and compile checks:
 
 ```powershell
@@ -58,7 +63,9 @@ Unit and compile checks:
 - Dynamic components: alert banner, status light, progress bar, segmented meter, scanner sweep, readout ticker.
 - Data/display components: telemetry panel, data table, log console, number matrix, star coordinates, and related readouts.
 - Layout templates: app, PADD, console, and responsive scaffolds.
+- Phone PADD variant components: compact PADD scaffold, side rail, status strips, readout panels, and controls for handheld portrait layouts.
 - Demo app with three layout breakpoints: portrait PADD, compact landscape, and wide landscape.
+- Separate PADD variant demo activity that does not replace or alter the original launcher demo.
 
 ## Component Documentation
 
@@ -88,6 +95,23 @@ LcarsTheme {
                 LcarsTelemetryEntry("fix", "high precision", LcarsTelemetryStatus.Normal),
             ),
         )
+    }
+}
+```
+
+Phone PADD variant:
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(
+        title = "systems data 21-0071",
+        registry = "uss raven - database 83-s28",
+    ) {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(
+                lines = listOf("mobile interface ready", "archive link nominal"),
+            )
+        }
     }
 }
 ```

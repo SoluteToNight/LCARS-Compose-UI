@@ -36,6 +36,7 @@ LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
 
 当前可用风格：
 
+- `LcarsStyle.StandardPadd`
 - `LcarsStyle.ClassicUltra`
 - `LcarsStyle.LowerDecks`
 - `LcarsStyle.LowerDecksPadd`
@@ -63,6 +64,27 @@ LcarsTheme(
 - `LcarsFramePanel`：带 LCARS 标题/页脚条的内容框架。
 - `LcarsTelemetryPanel`：响应式遥测读数网格。
 - `LcarsDataTable`：高密度状态表格。
+
+## 手机 PADD 变体
+
+手机 PADD 变体是一组面向手持竖屏的紧凑布局组件，提取 standard PADD 参考图中的黑底、橙色数据条、紫色端帽、少量侧栏和高密度文本读数特征，同时降低装饰性几何密度。
+
+- `LcarsPhonePaddTheme`：为手机 PADD 屏幕提供紧凑字体和间距。默认使用 `LcarsStyle.StandardPadd`，也可以传入任何已有 `LcarsStyle`。
+- `LcarsPhonePaddScaffold`：手机竖屏外壳，包含紧凑头部、可选侧边轨、内容区、页脚控制和状态条。
+- `LcarsPaddHeader`、`LcarsPaddSideRail`、`LcarsPaddStatusStrip`：PADD 专用结构组件。
+- `LcarsPaddControl`、`LcarsPaddReadoutPanel`、`LcarsPaddDataLines`、`LcarsPaddMessage`：适合手持 PADD 的高密度控制块和读数面板。
+
+示例：
+
+```kotlin
+LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+    LcarsPhonePaddScaffold(title = "systems data 21-0071") {
+        LcarsPaddReadoutPanel(title = "hansen family") {
+            LcarsPaddDataLines(listOf("archive link nominal", "message buffer ready"))
+        }
+    }
+}
+```
 
 ## 动态组件
 
@@ -96,6 +118,7 @@ LcarsTheme(
 
 - `LcarsAppScaffold`：通用 app 外壳，包含顶部条、控制 rail、内容区域和可选页脚。
 - `LcarsPaddScaffold`：适合竖屏 PADD 的外壳。
+- `LcarsPhonePaddScaffold`：降低装饰密度的手机竖屏 PADD 外壳。
 - `LcarsConsoleScaffold`：基于 `LcarsMainConsole` 的横屏 console 外壳。
 
 ## 示例
