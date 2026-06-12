@@ -19,41 +19,41 @@ class LcarsDemoComposeTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun alertButton_togglesStatusText() {
+    fun advisoryButton_togglesWeatherAlert() {
         composeRule.setContent {
             DemoLcarsTheme {
                 LcarsDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
-        composeRule.onNodeWithText("TRIGGER SYSTEM FLASH").performClick()
-        composeRule.onNodeWithText("DANGER: ALERT ACTIVE").assertIsDisplayed()
+        composeRule.onNodeWithText("STORM ADVISORY").performClick()
+        composeRule.onNodeWithText("STORM ADVISORY ACTIVE / PRESSURE DROP DETECTED").assertIsDisplayed()
+        composeRule.onNodeWithText("CLEAR ADVISORY").assertIsDisplayed()
     }
 
     @Test
-    fun catalogNavigation_showsComponentCatalog() {
+    fun weatherDemo_showsCurrentConditionsAndForecast() {
         composeRule.setContent {
             DemoLcarsTheme {
                 LcarsDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
-        composeRule.onNodeWithText("CATALOG").performClick()
-        composeRule.onNodeWithText("COMPONENT CATALOG").assertIsDisplayed()
-        composeRule.onNodeWithText("DYNAMIC STATES").assertIsDisplayed()
+        composeRule.onNodeWithText("CURRENT CONDITIONS").assertIsDisplayed()
+        composeRule.onNodeWithText("FORECAST MATRIX").assertIsDisplayed()
+        composeRule.onNodeWithText("28 DEGREES / CLOUDY").assertIsDisplayed()
     }
 
     @Test
-    fun segmentedControl_changesCatalogMode() {
+    fun weatherDemo_usesLowerDecksPaletteTitle() {
         composeRule.setContent {
             DemoLcarsTheme {
                 LcarsDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
-        composeRule.onNodeWithText("CATALOG").performClick()
-        composeRule.onNodeWithText("COMM").performClick()
-        composeRule.onNodeWithText("MODE COMM // SECURITY STANDBY // DIALOG IDLE").assertIsDisplayed()
+        composeRule.onNodeWithText("ATMOSPHERIC CONDITIONS").assertIsDisplayed()
+        composeRule.onNodeWithText("CURRENT CONDITIONS").assertIsDisplayed()
     }
 
     @Test
@@ -66,33 +66,6 @@ class LcarsDemoComposeTest {
         composeRule.onNodeWithText("HANSEN FAMILY").assertIsDisplayed()
         composeRule.onNodeWithText("STD").assertIsDisplayed()
         composeRule.onNodeWithText("CLASSIC").assertIsDisplayed()
-    }
-
-    @Test
-    fun toggle_changesCatalogState() {
-        composeRule.setContent {
-            DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
-            }
-        }
-
-        composeRule.onNodeWithText("CATALOG").performClick()
-        composeRule.onNodeWithText("STANDBY").performClick()
-        composeRule.onNodeWithText("MODE NAV // SECURITY ARMED // DIALOG IDLE").assertIsDisplayed()
-    }
-
-    @Test
-    fun dialog_confirmUpdatesCatalogState() {
-        composeRule.setContent {
-            DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
-            }
-        }
-
-        composeRule.onNodeWithText("CATALOG").performClick()
-        composeRule.onNodeWithText("OPEN DIALOG").performClick()
-        composeRule.onNodeWithText("AUTHORIZE").performClick()
-        composeRule.onNodeWithText("MODE NAV // SECURITY STANDBY // DIALOG CONFIRMED").assertIsDisplayed()
     }
 
     @Test

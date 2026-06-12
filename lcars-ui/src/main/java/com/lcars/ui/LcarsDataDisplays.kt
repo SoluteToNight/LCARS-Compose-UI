@@ -182,9 +182,15 @@ fun LcarsNumericLabel(
     modifier: Modifier = Modifier,
     color: Color = LocalLcarsColors.current.lightBlue,
     height: Dp = 46.dp,
+    leftWeight: Float = 0.42f,
+    labelWeight: Float = 0.24f,
+    rightWeight: Float = 0.34f,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
+    val safeLeftWeight = leftWeight.coerceAtLeast(0.01f)
+    val safeLabelWeight = labelWeight.coerceAtLeast(0.01f)
+    val safeRightWeight = rightWeight.coerceAtLeast(0.01f)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -194,13 +200,13 @@ fun LcarsNumericLabel(
     ) {
         Box(
             modifier = Modifier
-                .weight(0.42f)
+                .weight(safeLeftWeight)
                 .fillMaxHeight()
                 .background(color, RoundedCornerShapeCompat.StartPill),
         )
         LcarsText(
             text = label.filter(Char::isDigit).ifBlank { "000" },
-            modifier = Modifier.weight(0.24f),
+            modifier = Modifier.weight(safeLabelWeight),
             style = LocalLcarsTypography.current.header.copy(color = color),
             maxLines = 1,
             overflow = TextOverflow.Clip,
@@ -208,7 +214,7 @@ fun LcarsNumericLabel(
         )
         Box(
             modifier = Modifier
-                .weight(0.34f)
+                .weight(safeRightWeight)
                 .fillMaxHeight()
                 .background(color, RoundedCornerShapeCompat.EndPill),
         )

@@ -52,6 +52,7 @@ fun LcarsStatusLight(
     inactiveColor: Color = LocalLcarsColors.current.a7,
     alerting: Boolean = false,
     size: Dp = 18.dp,
+    compact: Boolean = false,
 ) {
     val colors = LocalLcarsColors.current
     val displayColor = steppedAlertColor(
@@ -64,7 +65,7 @@ fun LcarsStatusLight(
         modifier = modifier
             .fillMaxWidth()
             .background(colors.panel)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = if (compact) 6.dp else 8.dp, vertical = if (compact) 3.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -73,7 +74,7 @@ fun LcarsStatusLight(
                 .clip(RoundedCornerShape(percent = 50))
                 .background(displayColor),
         )
-        Spacer(modifier = Modifier.width(LocalLcarsSpacing.current.gapLarge))
+        Spacer(modifier = Modifier.width(if (compact) LocalLcarsSpacing.current.gapStandard else LocalLcarsSpacing.current.gapLarge))
         LcarsText(
             text = label,
             style = LocalLcarsTypography.current.labelSmall.copy(color = colors.lightBlue),
@@ -170,6 +171,7 @@ fun LcarsDataTable(
     headers: List<String>,
     rows: List<LcarsDataRow>,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
@@ -185,6 +187,7 @@ fun LcarsDataTable(
             cells = headers,
             background = colors.a7,
             textColor = Color.Black,
+            compact = compact,
         )
         rows.forEachIndexed { index, row ->
             DataTableLine(
@@ -195,6 +198,7 @@ fun LcarsDataTable(
                     else -> Color(0xFF111111)
                 },
                 textColor = if (row.highlighted) Color.Black else colors.lightBlue,
+                compact = compact,
             )
         }
     }
@@ -249,6 +253,7 @@ fun LcarsSegmentedMeter(
     modifier: Modifier = Modifier,
     color: Color = LocalLcarsColors.current.lightBlue,
     inactiveColor: Color = LocalLcarsColors.current.a7,
+    height: Dp = 36.dp,
 ) {
     val safeTotal = totalSegments.coerceAtLeast(1)
     val safeActive = activeSegments.coerceIn(0, safeTotal)
@@ -259,7 +264,7 @@ fun LcarsSegmentedMeter(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(36.dp)
+            .height(height)
             .background(LocalLcarsColors.current.panel),
     ) {
         val segmentWidth = max(0f, (size.width - gapPx * (safeTotal - 1)) / safeTotal)
@@ -278,12 +283,13 @@ private fun DataTableLine(
     cells: List<String>,
     background: Color,
     textColor: Color,
+    compact: Boolean,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .padding(horizontal = if (compact) 6.dp else 8.dp, vertical = if (compact) 2.dp else 5.dp),
         horizontalArrangement = Arrangement.spacedBy(LocalLcarsSpacing.current.gapStandard),
     ) {
         cells.forEach { cell ->

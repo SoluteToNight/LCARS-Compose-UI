@@ -25,3 +25,8 @@ captures/
 # Excluded project planning/reference docs
 /TODO.md
 /LCARS组件库.md
+
+# Temporary visual and variant preview files
+/padd-variant-preview.html
+/screenshots/
+

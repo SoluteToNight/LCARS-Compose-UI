@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -156,6 +157,7 @@ fun LcarsFramePanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .clipToBounds()
             .background(colors.background)
             .padding(gap),
         verticalArrangement = Arrangement.spacedBy(gap),
