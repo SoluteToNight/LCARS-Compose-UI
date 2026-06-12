@@ -77,8 +77,12 @@ Use Windows PowerShell from the repository root.
 - Run instrumented tests when a device/emulator is available:
   `./gradlew.bat connectedAndroidTest`
 
-This directory is not currently a Git repository, so use local file inspection
-instead of Git history for change tracking.
+This directory is a Git repository, so standard Git commands can be used for change tracking, commits, and pushing.
+
+## Component Design and Refactoring Conventions
+
+- **API Visibility**: Core visual/text components (like `LcarsText`) must be kept `public` so that client applications (like `:app`) can reuse them without duplicating rendering logic (e.g. uppercase conversion, `TextAutoSize` protection).
+- **Refactoring Fallbacks**: When migrating screens to new component APIs, preserve a local delegate/wrapper with a `USE_FALLBACK_TEXT` or similar boolean flag to allow instant rollback during visual regression testing.
 
 ## Editing Notes
 
@@ -88,3 +92,4 @@ instead of Git history for change tracking.
 - Keep generated/demo telemetry text and labels plausible but nonessential; the
   reusable component API matters more than hardcoded demo data.
 - Avoid broad refactors while the component taxonomy is still forming.
+
