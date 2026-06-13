@@ -11,9 +11,73 @@ enum class LcarsStyle {
     NemesisBlueUltra,
 }
 
+object LcarsClassicColors {
+    val africanViolet = Color(0xFFCC99FF)
+    val almond = Color(0xFFFFAA90)
+    val almondCreme = Color(0xFFFFBBAA)
+    val blue = Color(0xFF5566FF)
+    val bluey = Color(0xFF8899FF)
+    val butterscotch = Color(0xFFFF9966)
+    val gold = Color(0xFFFFAA00)
+    val goldenOrange = Color(0xFFFF9900)
+    val gray = Color(0xFF666688)
+    val green = Color(0xFF999933)
+    val ice = Color(0xFF99CCFF)
+    val lilac = Color(0xFFCC55FF)
+    val limaBean = Color(0xFFCCCC66)
+    val magenta = Color(0xFFCC5599)
+    val mars = Color(0xFFFF2200)
+    val moonlitViolet = Color(0xFF9966FF)
+    val orange = Color(0xFFFF8800)
+    val peach = Color(0xFFFF8866)
+    val red = Color(0xFFCC4444)
+    val sky = Color(0xFFAAAAFF)
+    val spaceWhite = Color(0xFFF5F6FA)
+    val sunflower = Color(0xFFFFCC99)
+    val tomato = Color(0xFFFF5555)
+    val violetCreme = Color(0xFFDDBBFF)
+}
+
 fun LcarsStyle.colors(): LcarsColors = when (this) {
     LcarsStyle.StandardPadd -> lcarsPhonePaddColors()
-    LcarsStyle.ClassicUltra -> LcarsColors()
+    LcarsStyle.ClassicUltra -> LcarsColors(
+        monoAmber = LcarsClassicColors.goldenOrange,
+        auxiliaryTan = LcarsClassicColors.almondCreme,
+        lightBlue = LcarsClassicColors.bluey,
+        violet = LcarsClassicColors.africanViolet,
+        tacticalGreen = LcarsClassicColors.gold,
+        alertRed = LcarsClassicColors.mars,
+        panel = Color(0xFF050505),
+        text = LcarsClassicColors.spaceWhite,
+        a1 = LcarsClassicColors.orange,
+        a2 = LcarsClassicColors.butterscotch,
+        a3 = LcarsClassicColors.almond,
+        a4 = LcarsClassicColors.sunflower,
+        a5 = LcarsClassicColors.gold,
+        a6 = LcarsClassicColors.lilac,
+        a7 = LcarsClassicColors.moonlitViolet,
+        a8 = LcarsClassicColors.violetCreme,
+        a9 = LcarsClassicColors.magenta,
+        blue = LcarsClassicColors.blue,
+        butterscotch = LcarsClassicColors.butterscotch,
+        almondCreme = LcarsClassicColors.almondCreme,
+        classicRed = LcarsClassicColors.red,
+        tomato = LcarsClassicColors.tomato,
+        gray = LcarsClassicColors.gray,
+        spaceWhite = LcarsClassicColors.spaceWhite,
+
+        // Semantic mapping for Weather Screen (TNG Command/Operations)
+        weatherFrame = LcarsClassicColors.red,
+        weatherBtnStyle = LcarsClassicColors.gold,
+        weatherBtnSecondary = LcarsClassicColors.butterscotch,
+        weatherBtnInactive = LcarsClassicColors.orange,
+        weatherActiveAccent = LcarsClassicColors.gold,
+        weatherInactiveAccent = LcarsClassicColors.butterscotch,
+        weatherSubHighlight = LcarsClassicColors.almondCreme,
+        weatherMeterInactive = LcarsClassicColors.gray,
+        weatherSensorBar = LcarsClassicColors.red,
+        weatherSensorLabel = LcarsClassicColors.gold,
+    )
     LcarsStyle.LowerDecks -> LcarsColors(
         monoAmber = Color(0xFFFF9911),
         auxiliaryTan = Color(0xFFFFEECC),

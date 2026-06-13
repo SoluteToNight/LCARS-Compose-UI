@@ -10,12 +10,15 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,13 +26,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,8 +100,11 @@ fun LcarsProgressBar(
     label: String? = null,
     color: Color = LocalLcarsColors.current.monoAmber,
     trackColor: Color = LocalLcarsColors.current.a7,
+    labelColor: Color = LocalLcarsColors.current.lightBlue,
     alerting: Boolean = false,
     height: Dp = 28.dp,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(percent = 50),
+    segments: Int? = null,
 ) {
     val colors = LocalLcarsColors.current
     val clampedProgress = progress.coerceIn(0f, 1f)
@@ -102,24 +115,52 @@ fun LcarsProgressBar(
         verticalArrangement = Arrangement.spacedBy(LocalLcarsSpacing.current.gapStandard),
     ) {
         if (label != null) {
-            LcarsText(
-                text = "$label ${(clampedProgress * 100f).roundToInt()}",
-                style = LocalLcarsTypography.current.labelSmall.copy(color = colors.lightBlue),
-                maxLines = 1,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LcarsText(
+                    text = label,
+                    style = LocalLcarsTypography.current.labelSmall.copy(color = labelColor),
+                    maxLines = 1,
+                )
+                LcarsText(
+                    text = "${(clampedProgress * 100f).roundToInt()}%",
+                    style = LocalLcarsTypography.current.labelSmall.copy(color = labelColor),
+                    maxLines = 1,
+                )
+            }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
-                .background(trackColor),
-        ) {
+        if (segments != null && segments > 0) {
+            val activeSegments = if (clampedProgress > 0f) {
+                (clampedProgress * segments).roundToInt().coerceAtLeast(1)
+            } else {
+                0
+            }
+            LcarsSegmentedMeter(
+                activeSegments = activeSegments,
+                totalSegments = segments,
+                color = fillColor,
+                inactiveColor = trackColor,
+                height = height,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(clampedProgress)
-                    .fillMaxHeight()
-                    .background(fillColor),
-            )
+                    .fillMaxWidth()
+                    .height(height)
+                    .clip(shape)
+                    .background(trackColor),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(clampedProgress)
+                        .fillMaxHeight()
+                        .background(fillColor),
+                )
+            }
         }
     }
 }
@@ -161,6 +202,7 @@ fun LcarsAlertBanner(
     }
 }
 
+@Immutable
 data class LcarsDataRow(
     val cells: List<String>,
     val highlighted: Boolean = false,
@@ -264,8 +306,7 @@ fun LcarsSegmentedMeter(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(height)
-            .background(LocalLcarsColors.current.panel),
+            .height(height),
     ) {
         val segmentWidth = max(0f, (size.width - gapPx * (safeTotal - 1)) / safeTotal)
         repeat(safeTotal) { index ->
@@ -277,6 +318,63 @@ fun LcarsSegmentedMeter(
         }
     }
 }
+
+@Composable
+fun LcarsSegmentedSlider(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    totalSegments: Int,
+    modifier: Modifier = Modifier,
+    color: Color = LocalLcarsColors.current.lightBlue,
+    inactiveColor: Color = LocalLcarsColors.current.a7,
+    height: Dp = 36.dp,
+) {
+    val total = totalSegments.coerceAtLeast(1)
+    var width by remember { mutableStateOf(1) }
+    val soundService = LocalLcarsSoundService.current
+    val currentValue by rememberUpdatedState(value)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentSoundService by rememberUpdatedState(soundService)
+
+    Box(
+        modifier = modifier
+            .height(height)
+            .onGloballyPositioned { coordinates ->
+                width = coordinates.size.width.coerceAtLeast(1)
+            }
+            .pointerInput(total, width) {
+                detectTapGestures { offset ->
+                    val fraction = (offset.x / width).coerceIn(0f, 1f)
+                    val newValue = (fraction * total).roundToInt()
+                    if (newValue != currentValue) {
+                        currentSoundService.playSliderAdjust()
+                        currentOnValueChange(newValue)
+                    }
+                }
+            }
+            .pointerInput(total, width) {
+                detectHorizontalDragGestures { change, _ ->
+                    change.consume()
+                    val fraction = (change.position.x / width).coerceIn(0f, 1f)
+                    val newValue = (fraction * total).roundToInt()
+                    if (newValue != currentValue) {
+                        currentSoundService.playSliderAdjust()
+                        currentOnValueChange(newValue)
+                    }
+                }
+            }
+    ) {
+        LcarsSegmentedMeter(
+            activeSegments = value,
+            totalSegments = total,
+            color = color,
+            inactiveColor = inactiveColor,
+            height = height,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
 
 @Composable
 private fun DataTableLine(

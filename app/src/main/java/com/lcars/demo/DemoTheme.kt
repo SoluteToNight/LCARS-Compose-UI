@@ -5,6 +5,6 @@ import com.lcars.ui.LcarsAdaptiveTheme
 import com.lcars.ui.LcarsStyle
 
 @Composable
-fun DemoLcarsTheme(content: @Composable () -> Unit) {
-    LcarsAdaptiveTheme(style = LcarsStyle.LowerDecksPadd, content = content)
+fun DemoLcarsTheme(style: LcarsStyle = LcarsStyle.LowerDecksPadd, content: @Composable () -> Unit) {
+    LcarsAdaptiveTheme(style = style, content = content)
 }

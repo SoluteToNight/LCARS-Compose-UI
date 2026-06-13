@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -327,137 +328,139 @@ private fun InspectSide(
 ) {
     val colors = LocalLcarsColors.current
     Box(
-        modifier = modifier.width(width),
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            val frameStroke = 8.dp.toPx().coerceAtMost(w * 0.24f)
-            val corner = w * 0.64f
-            val path = Path().apply {
-                if (side == LcarsCommandRailSide.Start) {
-                    moveTo(w, 0f)
-                    lineTo(corner, 0f)
-                    quadraticTo(0f, 0f, 0f, corner)
-                    lineTo(0f, h - corner)
-                    quadraticTo(0f, h, corner, h)
-                    lineTo(w, h)
-                    lineTo(w, h - 8.dp.toPx())
-                    lineTo(corner, h - 8.dp.toPx())
-                    quadraticTo(8.dp.toPx(), h - 8.dp.toPx(), 8.dp.toPx(), h - corner)
-                    lineTo(8.dp.toPx(), corner)
-                    quadraticTo(8.dp.toPx(), 8.dp.toPx(), corner, 8.dp.toPx())
-                    lineTo(w, 8.dp.toPx())
-                } else {
-                    moveTo(0f, 0f)
-                    lineTo(w - corner, 0f)
-                    quadraticTo(w, 0f, w, corner)
-                    lineTo(w, h - corner)
-                    quadraticTo(w, h, w - corner, h)
-                    lineTo(0f, h)
-                    lineTo(0f, h - 8.dp.toPx())
-                    lineTo(w - corner, h - 8.dp.toPx())
-                    quadraticTo(w - 8.dp.toPx(), h - 8.dp.toPx(), w - 8.dp.toPx(), h - corner)
-                    lineTo(w - 8.dp.toPx(), corner)
-                    quadraticTo(w - 8.dp.toPx(), 8.dp.toPx(), w - corner, 8.dp.toPx())
-                    lineTo(0f, 8.dp.toPx())
+        modifier = modifier
+            .width(width)
+            .drawWithCache {
+                val w = size.width
+                val h = size.height
+                val frameStroke = 8.dp.toPx().coerceAtMost(w * 0.24f)
+                val corner = w * 0.64f
+                val path = Path().apply {
+                    if (side == LcarsCommandRailSide.Start) {
+                        moveTo(w, 0f)
+                        lineTo(corner, 0f)
+                        quadraticTo(0f, 0f, 0f, corner)
+                        lineTo(0f, h - corner)
+                        quadraticTo(0f, h, corner, h)
+                        lineTo(w, h)
+                        lineTo(w, h - 8.dp.toPx())
+                        lineTo(corner, h - 8.dp.toPx())
+                        quadraticTo(8.dp.toPx(), h - 8.dp.toPx(), 8.dp.toPx(), h - corner)
+                        lineTo(8.dp.toPx(), corner)
+                        quadraticTo(8.dp.toPx(), 8.dp.toPx(), corner, 8.dp.toPx())
+                        lineTo(w, 8.dp.toPx())
+                    } else {
+                        moveTo(0f, 0f)
+                        lineTo(w - corner, 0f)
+                        quadraticTo(w, 0f, w, corner)
+                        lineTo(w, h - corner)
+                        quadraticTo(w, h, w - corner, h)
+                        lineTo(0f, h)
+                        lineTo(0f, h - 8.dp.toPx())
+                        lineTo(w - corner, h - 8.dp.toPx())
+                        quadraticTo(w - 8.dp.toPx(), h - 8.dp.toPx(), w - 8.dp.toPx(), h - corner)
+                        lineTo(w - 8.dp.toPx(), corner)
+                        quadraticTo(w - 8.dp.toPx(), 8.dp.toPx(), w - corner, 8.dp.toPx())
+                        lineTo(0f, 8.dp.toPx())
+                    }
+                    close()
                 }
-                close()
-            }
-            drawPath(path, color)
+                onDrawBehind {
+                    drawPath(path, color)
 
-            if (showSideRails) {
-                val railClearance = 7.dp.toPx().coerceAtMost(w * 0.16f)
-                val railWidth = w * 0.34f
-                val lightWidth = railWidth * 0.46f
-                val darkWidth = railWidth * 0.32f
-                val innerGap = railWidth * 0.16f
-                val railInset = frameStroke + railClearance
-                val lightLeft = if (side == LcarsCommandRailSide.Start) {
-                    railInset
-                } else {
-                    w - railInset - lightWidth
-                }
-                val darkLeft = if (side == LcarsCommandRailSide.Start) {
-                    lightLeft + lightWidth + innerGap
-                } else {
-                    lightLeft - innerGap - darkWidth
-                }
-                val gutterPadding = 5.dp.toPx()
-                val gutterLeft = (lightLeft.coerceAtMost(darkLeft) - gutterPadding).coerceAtLeast(0f)
-                val gutterRight = (lightLeft.coerceAtLeast(darkLeft) + lightWidth.coerceAtLeast(darkWidth) + gutterPadding)
-                    .coerceAtMost(w)
-                drawRect(
-                    color = colors.background,
-                    topLeft = Offset(gutterLeft, h * 0.08f),
-                    size = Size(gutterRight - gutterLeft, h * 0.84f),
-                )
-                drawRect(
-                    color = colors.a3,
-                    topLeft = Offset(lightLeft, h * 0.12f),
-                    size = Size(lightWidth, h * 0.76f),
-                )
-                drawRect(
-                    color = colors.a7,
-                    topLeft = Offset(darkLeft, h * 0.18f),
-                    size = Size(darkWidth, h * 0.64f),
-                )
-            }
-            val markerY = h * markerPosition.coerceIn(0.08f, 0.92f)
-            drawOval(
-                color = markerColor,
-                topLeft = Offset(
-                    x = if (side == LcarsCommandRailSide.Start) w * 0.42f else w * 0.18f,
-                    y = markerY - 7.dp.toPx(),
-                ),
-                size = Size(w * 0.5f, 14.dp.toPx()),
-            )
-            val tickStart = 0.14f
-            val tickEnd = 0.86f
-            val tickCount = 13
-            val tickStep = (tickEnd - tickStart) / (tickCount - 1)
-            val markerRange = tickStep * 3.2f
-            repeat(tickCount) { index ->
-                val tickPosition = tickStart + index * tickStep
-                val y = h * tickPosition
-                val markerDistance = kotlin.math.abs(tickPosition - markerPosition.coerceIn(0.08f, 0.92f))
-                val highlight = (1f - markerDistance / markerRange).coerceIn(0f, 1f)
-                val length = w * (0.16f + highlight * 0.42f)
-                val edgePadding = frameStroke + 5.dp.toPx()
-                val edgeX = if (side == LcarsCommandRailSide.Start) edgePadding else w - edgePadding
-                val innerX = if (side == LcarsCommandRailSide.Start) {
-                    edgeX + length
-                } else {
-                    edgeX - length
-                }
-                val alpha = 0.055f + highlight * 0.945f
-                val glow = highlight * highlight
-                val strokeWidth = 1.dp.toPx() + highlight * 2.dp.toPx()
-                if (glow > 0f) {
-                    drawLine(
-                        color = markerColor.copy(alpha = glow * 0.34f),
-                        start = Offset(edgeX, y),
-                        end = Offset(innerX, y),
-                        strokeWidth = strokeWidth + 4.dp.toPx(),
+                    if (showSideRails) {
+                        val railClearance = 7.dp.toPx().coerceAtMost(w * 0.16f)
+                        val railWidth = w * 0.34f
+                        val lightWidth = railWidth * 0.46f
+                        val darkWidth = railWidth * 0.32f
+                        val innerGap = railWidth * 0.16f
+                        val railInset = frameStroke + railClearance
+                        val lightLeft = if (side == LcarsCommandRailSide.Start) {
+                            railInset
+                        } else {
+                            w - railInset - lightWidth
+                        }
+                        val darkLeft = if (side == LcarsCommandRailSide.Start) {
+                            lightLeft + lightWidth + innerGap
+                        } else {
+                            lightLeft - innerGap - darkWidth
+                        }
+                        val gutterPadding = 5.dp.toPx()
+                        val gutterLeft = (lightLeft.coerceAtMost(darkLeft) - gutterPadding).coerceAtLeast(0f)
+                        val gutterRight = (lightLeft.coerceAtLeast(darkLeft) + lightWidth.coerceAtLeast(darkWidth) + gutterPadding)
+                            .coerceAtMost(w)
+                        drawRect(
+                            color = colors.background,
+                            topLeft = Offset(gutterLeft, h * 0.08f),
+                            size = Size(gutterRight - gutterLeft, h * 0.84f),
+                        )
+                        drawRect(
+                            color = colors.a3,
+                            topLeft = Offset(lightLeft, h * 0.12f),
+                            size = Size(lightWidth, h * 0.76f),
+                        )
+                        drawRect(
+                            color = colors.a7,
+                            topLeft = Offset(darkLeft, h * 0.18f),
+                            size = Size(darkWidth, h * 0.64f),
+                        )
+                    }
+                    val markerY = h * markerPosition.coerceIn(0.08f, 0.92f)
+                    drawOval(
+                        color = markerColor,
+                        topLeft = Offset(
+                            x = if (side == LcarsCommandRailSide.Start) w * 0.42f else w * 0.18f,
+                            y = markerY - 7.dp.toPx(),
+                        ),
+                        size = Size(w * 0.5f, 14.dp.toPx()),
                     )
-                }
-                drawLine(
-                    color = markerColor.copy(alpha = alpha),
-                    start = Offset(edgeX, y),
-                    end = Offset(innerX, y),
-                    strokeWidth = strokeWidth,
-                )
-                if (glow > 0.08f) {
-                    drawLine(
-                        color = markerColor.copy(alpha = glow * 0.62f),
-                        start = Offset(edgeX, y),
-                        end = Offset(innerX, y),
-                        strokeWidth = 0.6.dp.toPx() + highlight * 0.9.dp.toPx(),
-                    )
+                    val tickStart = 0.14f
+                    val tickEnd = 0.86f
+                    val tickCount = 13
+                    val tickStep = (tickEnd - tickStart) / (tickCount - 1)
+                    val markerRange = tickStep * 3.2f
+                    repeat(tickCount) { index ->
+                        val tickPosition = tickStart + index * tickStep
+                        val y = h * tickPosition
+                        val markerDistance = kotlin.math.abs(tickPosition - markerPosition.coerceIn(0.08f, 0.92f))
+                        val highlight = (1f - markerDistance / markerRange).coerceIn(0f, 1f)
+                        val length = w * (0.16f + highlight * 0.42f)
+                        val edgePadding = frameStroke + 5.dp.toPx()
+                        val edgeX = if (side == LcarsCommandRailSide.Start) edgePadding else w - edgePadding
+                        val innerX = if (side == LcarsCommandRailSide.Start) {
+                            edgeX + length
+                        } else {
+                            edgeX - length
+                        }
+                        val alpha = 0.055f + highlight * 0.945f
+                        val glow = highlight * highlight
+                        val strokeWidth = 1.dp.toPx() + highlight * 2.dp.toPx()
+                        if (glow > 0f) {
+                            drawLine(
+                                color = markerColor.copy(alpha = glow * 0.34f),
+                                start = Offset(edgeX, y),
+                                end = Offset(innerX, y),
+                                strokeWidth = strokeWidth + 4.dp.toPx(),
+                            )
+                        }
+                        drawLine(
+                            color = markerColor.copy(alpha = alpha),
+                            start = Offset(edgeX, y),
+                            end = Offset(innerX, y),
+                            strokeWidth = strokeWidth,
+                        )
+                        if (glow > 0.08f) {
+                            drawLine(
+                                color = markerColor.copy(alpha = glow * 0.62f),
+                                start = Offset(edgeX, y),
+                                end = Offset(innerX, y),
+                                strokeWidth = 0.6.dp.toPx() + highlight * 0.9.dp.toPx(),
+                            )
+                        }
+                    }
                 }
             }
-        }
-    }
+    )
 }
 
 private data class DividerSpec(

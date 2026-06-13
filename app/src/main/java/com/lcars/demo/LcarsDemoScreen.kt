@@ -5,9 +5,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 
+import com.lcars.ui.LcarsStyle
+
 @Composable
-fun LcarsDemoScreen(modifier: Modifier = Modifier) {
-    AtmosphericConditionsDemoScreen(modifier = modifier)
+fun LcarsDemoScreen(
+    modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
+) {
+    AtmosphericConditionsDemoScreen(
+        modifier = modifier,
+        style = style,
+        onToggleStyle = onToggleStyle,
+    )
 }
 
 @Preview(widthDp = 1280, heightDp = 720, showBackground = true)

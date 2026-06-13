@@ -149,6 +149,7 @@ fun LcarsFramePanel(
     title: String,
     modifier: Modifier = Modifier,
     footerLabel: String? = null,
+    titleAlign: LcarsLabelAlign = LcarsLabelAlign.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalLcarsColors.current
@@ -167,7 +168,7 @@ fun LcarsFramePanel(
             height = LocalLcarsSpacing.current.barHeight.coerceAtMost(20.dp),
             startCap = true,
             label = title,
-            labelAlign = LcarsLabelAlign.Start,
+            labelAlign = titleAlign,
             labelColor = colors.a1,
         )
         Column(

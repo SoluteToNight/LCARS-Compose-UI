@@ -329,6 +329,7 @@ fun LcarsPaddControl(
     enabled: Boolean = true,
 ) {
     val metrics = LocalLcarsPhonePaddMetrics.current
+    val soundService = LocalLcarsSoundService.current
     val controlShape = when (shape) {
         LcarsPaddControlShape.Pill -> RoundedCornerShape(percent = 50)
         LcarsPaddControlShape.LeftCap -> RoundedCornerShape(
@@ -347,7 +348,10 @@ fun LcarsPaddControl(
             .defaultMinSize(minHeight = metrics.controlHeight)
             .clip(controlShape)
             .background(color)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = {
+                soundService.playClick()
+                onClick()
+            })
             .alpha(if (enabled) 1f else 0f)
             .padding(horizontal = metrics.panelPadding, vertical = 5.dp),
         contentAlignment = Alignment.BottomEnd,

@@ -3,7 +3,9 @@ package com.lcars.ui
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -41,6 +43,17 @@ data class LcarsColors(
     val tomato: Color = Color(0xFFFF5555),
     val gray: Color = Color(0xFF666688),
     val spaceWhite: Color = Color(0xFFF5F6FA),
+    // Semantic Roles for UI Layouts
+    val weatherFrame: Color = lightBlue,
+    val weatherBtnStyle: Color = lightBlue,
+    val weatherBtnSecondary: Color = violet,
+    val weatherBtnInactive: Color = a6,
+    val weatherActiveAccent: Color = tacticalGreen,
+    val weatherInactiveAccent: Color = a2,
+    val weatherSubHighlight: Color = a2,
+    val weatherMeterInactive: Color = a7,
+    val weatherSensorBar: Color = a8,
+    val weatherSensorLabel: Color = a1,
 )
 
 val LcarsDefaultFontFamily = FontFamily(
@@ -101,10 +114,54 @@ data class LcarsAdaptiveProfile(
     val compact: Boolean = false,
 )
 
+interface LcarsSoundService {
+    fun playClick()
+    fun playAlert()
+    fun playSliderAdjust()
+}
+
+class DefaultLcarsSoundService : LcarsSoundService, java.io.Closeable {
+    private var toneGenerator: android.media.ToneGenerator? = null
+
+    init {
+        try {
+            toneGenerator = android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 70)
+        } catch (e: Exception) {
+            // ignore
+        }
+    }
+
+    override fun playClick() {
+        toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 45)
+    }
+
+    override fun playAlert() {
+        toneGenerator?.startTone(android.media.ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 150)
+    }
+
+    override fun playSliderAdjust() {
+        toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 30)
+    }
+
+    override fun close() {
+        toneGenerator?.release()
+        toneGenerator = null
+    }
+}
+
+class NoOpSoundService : LcarsSoundService {
+    override fun playClick() {}
+    override fun playAlert() {}
+    override fun playSliderAdjust() {}
+}
+
 val LocalLcarsColors = staticCompositionLocalOf { LcarsColors() }
 val LocalLcarsTypography = staticCompositionLocalOf { LcarsTypography() }
 val LocalLcarsSpacing = staticCompositionLocalOf { LcarsSpacing() }
 val LocalLcarsAdaptiveProfile = staticCompositionLocalOf { LcarsAdaptiveProfile() }
+val LocalLcarsSoundService = staticCompositionLocalOf<LcarsSoundService> {
+    NoOpSoundService()
+}
 
 @Composable
 fun LcarsTheme(
@@ -113,13 +170,23 @@ fun LcarsTheme(
     typography: LcarsTypography = LcarsTypography(),
     spacing: LcarsSpacing? = null,
     adaptiveProfile: LcarsAdaptiveProfile = LcarsAdaptiveProfile(),
+    soundService: LcarsSoundService? = null,
     content: @Composable () -> Unit,
 ) {
+    val resolvedSoundService = soundService ?: remember { DefaultLcarsSoundService() }
+    if (soundService == null) {
+        DisposableEffect(resolvedSoundService) {
+            onDispose {
+                (resolvedSoundService as? java.io.Closeable)?.close()
+            }
+        }
+    }
     CompositionLocalProvider(
         LocalLcarsColors provides (colors ?: style.colors()),
         LocalLcarsTypography provides typography,
         LocalLcarsSpacing provides (spacing ?: style.spacing()),
         LocalLcarsAdaptiveProfile provides adaptiveProfile,
+        LocalLcarsSoundService provides resolvedSoundService,
         content = content,
     )
 }
@@ -132,6 +199,7 @@ fun LcarsAdaptiveTheme(
     spacing: LcarsSpacing? = null,
     compactLandscapeHeight: Dp = 520.dp,
     compactWidth: Dp = 600.dp,
+    soundService: LcarsSoundService? = null,
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints {
@@ -148,6 +216,7 @@ fun LcarsAdaptiveTheme(
             typography = typography,
             spacing = resolveLcarsAdaptiveSpacing(resolvedSpacing, profile),
             adaptiveProfile = profile,
+            soundService = soundService,
             content = content,
         )
     }

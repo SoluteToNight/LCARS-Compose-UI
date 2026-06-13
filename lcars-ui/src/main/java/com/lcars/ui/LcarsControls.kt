@@ -185,6 +185,7 @@ fun LcarsToggle(
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
+    val soundService = LocalLcarsSoundService.current
     val activeColor = steppedAlertColor(
         baseColor = if (checked) colors.tacticalGreen else colors.monoAmber,
         alertColor = colors.alertRed,
@@ -197,7 +198,10 @@ fun LcarsToggle(
             .height(48.dp)
             .clip(RoundedCornerShape(percent = 50))
             .background(colors.panel)
-            .clickable(role = Role.Switch) { onCheckedChange(!checked) }
+            .clickable(role = Role.Switch) {
+                soundService.playClick()
+                onCheckedChange(!checked)
+            }
             .semantics(mergeDescendants = true) {}
             .padding(gap),
         horizontalArrangement = Arrangement.spacedBy(gap),

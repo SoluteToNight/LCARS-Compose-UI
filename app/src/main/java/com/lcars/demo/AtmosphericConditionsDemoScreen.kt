@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
@@ -70,6 +71,7 @@ import com.lcars.ui.LcarsProgressBar
 import com.lcars.ui.LcarsReadoutTicker
 import com.lcars.ui.LcarsResponsiveScaffold
 import com.lcars.ui.LcarsSegmentedMeter
+import com.lcars.ui.LcarsSegmentedSlider
 import com.lcars.ui.LcarsStatusLight
 import com.lcars.ui.LcarsTargetScanner
 import com.lcars.ui.LcarsTelemetryEntry
@@ -79,13 +81,20 @@ import com.lcars.ui.LcarsText
 import com.lcars.ui.LocalLcarsColors
 import com.lcars.ui.LocalLcarsSpacing
 import com.lcars.ui.LocalLcarsTypography
+import com.lcars.ui.LcarsStyle
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-fun AtmosphericConditionsDemoScreen(modifier: Modifier = Modifier) {
+fun AtmosphericConditionsDemoScreen(
+    modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val inPreview = LocalInspectionMode.current
     var alertActive by rememberSaveable { mutableStateOf(false) }
@@ -147,6 +156,8 @@ fun AtmosphericConditionsDemoScreen(modifier: Modifier = Modifier) {
                     alertActive = alertActive,
                     onToggleAlert = { alertActive = !alertActive },
                     modifier = Modifier.fillMaxSize(),
+                    style = style,
+                    onToggleStyle = onToggleStyle,
                 )
             },
             compactLandscape = {
@@ -155,6 +166,8 @@ fun AtmosphericConditionsDemoScreen(modifier: Modifier = Modifier) {
                     alertActive = alertActive,
                     onToggleAlert = { alertActive = !alertActive },
                     modifier = Modifier.fillMaxSize(),
+                    style = style,
+                    onToggleStyle = onToggleStyle,
                 )
             },
             wideLandscape = {
@@ -163,6 +176,8 @@ fun AtmosphericConditionsDemoScreen(modifier: Modifier = Modifier) {
                     alertActive = alertActive,
                     onToggleAlert = { alertActive = !alertActive },
                     modifier = Modifier.fillMaxSize(),
+                    style = style,
+                    onToggleStyle = onToggleStyle,
                 )
             },
         )
@@ -175,6 +190,8 @@ private fun WeatherWideLandscape(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
 ) {
     BoxWithConstraints(modifier = modifier) {
         val dense = maxHeight < 760.dp
@@ -185,6 +202,8 @@ private fun WeatherWideLandscape(
             compact = false,
             dense = dense,
             modifier = Modifier.fillMaxSize(),
+            style = style,
+            onToggleStyle = onToggleStyle,
         ) {
             WeatherMainDeck(
                 report = report,
@@ -204,12 +223,16 @@ private fun WeatherCompactLandscape(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
 ) {
     WeatherPaddLandscapeFrame(
         alertActive = alertActive,
         onToggleAlert = onToggleAlert,
         compact = true,
         modifier = modifier,
+        style = style,
+        onToggleStyle = onToggleStyle,
     ) {
         WeatherMainDeck(
             report = report,
@@ -228,6 +251,8 @@ private fun WeatherPaddLandscapeFrame(
     compact: Boolean,
     dense: Boolean = compact,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val colors = LocalLcarsColors.current
@@ -250,6 +275,8 @@ private fun WeatherPaddLandscapeFrame(
             modifier = Modifier
                 .width(leftWidth)
                 .fillMaxHeight(),
+            style = style,
+            onToggleStyle = onToggleStyle,
         )
         Box(
             modifier = Modifier
@@ -259,6 +286,7 @@ private fun WeatherPaddLandscapeFrame(
             RightFrameCorner(
                 barHeight = barHeight,
                 compact = compactFrame,
+                style = style,
                 modifier = Modifier.matchParentSize(),
             )
             Column(
@@ -267,6 +295,7 @@ private fun WeatherPaddLandscapeFrame(
             ) {
                 WeatherBarPanel(
                     compact = compactFrame,
+                    style = style,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(barHeight),
@@ -290,44 +319,75 @@ private fun WeatherLeftFrame(
     onToggleAlert: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
+    val topPadding = if (compact) 136.dp else 166.dp
+    val elbowHeight = topPadding - gap
 
-    Box(modifier = modifier) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier.drawWithCache {
             val radius = if (compact) 64.dp.toPx() else 98.dp.toPx()
+            val heightPx = elbowHeight.toPx()
             val body = Path().apply {
-                moveTo(0f, size.height)
+                moveTo(0f, heightPx)
                 lineTo(0f, radius)
                 quadraticTo(0f, 0f, radius, 0f)
                 lineTo(size.width, 0f)
-                lineTo(size.width, size.height)
+                lineTo(size.width, heightPx)
                 close()
             }
-            drawPath(path = body, color = colors.lightBlue)
+            onDrawBehind {
+                drawPath(
+                    path = body,
+                    color = colors.weatherFrame
+                )
+            }
         }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = if (compact) 64.dp else 96.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .padding(top = topPadding),
+            verticalArrangement = Arrangement.spacedBy(gap),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-                WeatherFramePanel("03-111968", colors.lightBlue, if (compact) 42.dp else 58.dp)
-                WeatherFramePanel("04-041969", colors.violet, if (compact) 48.dp else 68.dp)
-                WeatherFramePanel("05-1701D", colors.a7, if (compact) 54.dp else 88.dp)
-                WeatherFramePanel(
-                    text = "storm advisory",
-                    color = if (alertActive) colors.alertRed else colors.lightBlue,
-                    height = if (compact) 46.dp else 64.dp,
-                    onClick = onToggleAlert,
-                )
-                WeatherFramePanel("forecast", colors.auxiliaryTan, if (compact) 42.dp else 58.dp)
-            }
+            WeatherFramePanel(
+                text = if (style == LcarsStyle.ClassicUltra) "classic style" else "decks style",
+                color = colors.weatherBtnStyle,
+                height = if (compact) 42.dp else 58.dp,
+                onClick = onToggleStyle,
+            )
+            WeatherFramePanel(
+                text = "04-041969",
+                color = colors.weatherBtnSecondary,
+                height = if (compact) 48.dp else 68.dp
+            )
+            WeatherFramePanel(
+                text = "05-1701D",
+                color = colors.a7,
+                height = if (compact) 54.dp else 88.dp
+            )
+            WeatherFramePanel(
+                text = "storm advisory",
+                color = if (alertActive) colors.alertRed else colors.weatherFrame,
+                height = if (compact) 46.dp else 64.dp,
+                onClick = onToggleAlert,
+            )
+            WeatherFramePanel("forecast", colors.auxiliaryTan, if (compact) 42.dp else 58.dp)
+
+            // Fluid vertical frame segment (corresponding to classic .panel-9)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(colors.weatherFrame)
+            )
+
             WeatherFramePanel(
                 text = if (alertActive) "clear advisory" else "met-07",
-                color = if (alertActive) colors.alertRed else colors.a6,
+                color = if (alertActive) colors.alertRed else colors.weatherBtnInactive,
                 height = if (compact) 64.dp else 110.dp,
                 onClick = onToggleAlert,
             )
@@ -363,6 +423,7 @@ private fun WeatherFramePanel(
 private fun WeatherBarPanel(
     compact: Boolean,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
@@ -375,31 +436,31 @@ private fun WeatherBarPanel(
             modifier = Modifier
                 .weight(0.10f)
                 .fillMaxHeight()
-                .background(colors.lightBlue),
+                .background(colors.weatherFrame),
         )
         Box(
             modifier = Modifier
                 .weight(0.28f)
                 .fillMaxHeight()
-                .background(colors.tacticalGreen),
+                .background(colors.weatherActiveAccent),
         )
         Box(
             modifier = Modifier
                 .weight(0.07f)
                 .fillMaxHeight()
-                .background(colors.violet),
+                .background(colors.weatherBtnStyle),
         )
         Box(
             modifier = Modifier
                 .weight(0.50f)
                 .fillMaxHeight()
-                .background(colors.lightBlue),
+                .background(colors.weatherBtnStyle),
         )
         Box(
             modifier = Modifier
                 .weight(if (compact) 0.08f else 0.05f)
                 .fillMaxHeight()
-                .background(colors.a2),
+                .background(colors.weatherInactiveAccent),
         )
     }
 }
@@ -409,30 +470,38 @@ private fun RightFrameCorner(
     barHeight: androidx.compose.ui.unit.Dp,
     compact: Boolean,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
 ) {
     val colors = LocalLcarsColors.current
 
-    Canvas(modifier = modifier) {
-        val corner = if (compact) 32.dp.toPx() else 44.dp.toPx()
-        val top = barHeight.toPx()
-        val colorBridge = Path().apply {
-            moveTo(0f, top)
-            lineTo(corner, top)
-            lineTo(0f, top + corner)
-            close()
+    Box(
+        modifier = modifier.drawWithCache {
+            val corner = if (compact) 32.dp.toPx() else 44.dp.toPx()
+            val top = barHeight.toPx()
+            val colorBridge = Path().apply {
+                moveTo(0f, top)
+                lineTo(corner, top)
+                lineTo(0f, top + corner)
+                close()
+            }
+            val maskRadius = corner * 0.62f
+            val mask = Path().apply {
+                moveTo(0f, top + maskRadius)
+                quadraticTo(0f, top, maskRadius, top)
+                lineTo(corner, top)
+                lineTo(corner, top + corner)
+                lineTo(0f, top + corner)
+                close()
+            }
+            onDrawBehind {
+                drawPath(
+                    path = colorBridge,
+                    color = colors.weatherFrame
+                )
+                drawPath(path = mask, color = colors.background)
+            }
         }
-        drawPath(path = colorBridge, color = colors.lightBlue)
-        val maskRadius = corner * 0.62f
-        val mask = Path().apply {
-            moveTo(0f, top + maskRadius)
-            quadraticTo(0f, top, maskRadius, top)
-            lineTo(corner, top)
-            lineTo(corner, top + corner)
-            lineTo(0f, top + corner)
-            close()
-        }
-        drawPath(path = mask, color = colors.background)
-    }
+    )
 }
 
 @Composable
@@ -441,6 +510,8 @@ private fun WeatherPortrait(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
 ) {
     val colors = LocalLcarsColors.current
     val spacing = LocalLcarsSpacing.current
@@ -459,15 +530,16 @@ private fun WeatherPortrait(
             horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
         ) {
             LcarsElbow(
-                text = "met",
-                color = colors.lightBlue,
+                text = if (style == LcarsStyle.ClassicUltra) "classic" else "decks",
+                color = colors.weatherFrame,
                 direction = LcarsElbowDirection.TopLeft,
                 wingWidth = 106.dp,
                 wingHeight = 62.dp,
                 thickness = 30.dp,
+                modifier = Modifier.clickable { onToggleStyle?.invoke() }
             )
             LcarsBar(
-                color = colors.tacticalGreen,
+                color = colors.weatherActiveAccent,
                 height = 34.dp,
                 endCap = true,
                 label = "atmospheric conditions",
@@ -477,12 +549,20 @@ private fun WeatherPortrait(
                     .align(Alignment.Top),
             )
         }
-        WeatherButtonRow(alertActive = alertActive, onToggleAlert = onToggleAlert)
+        WeatherButtonRow(
+            alertActive = alertActive,
+            onToggleAlert = onToggleAlert,
+            style = style,
+            onToggleStyle = onToggleStyle,
+        )
         AlertStrip(report = report, alertActive = alertActive)
         CurrentConditionsPanel(report = report, alertActive = alertActive, compact = true)
         ForecastPanel(report = report, compact = true)
         StationPanel(report = report, alertActive = alertActive, compact = true)
-        LcarsFramePanel(title = "sensor cascade", footerLabel = "lower decks padd 24.2") {
+        LcarsFramePanel(
+            title = "sensor cascade",
+            footerLabel = if (style == LcarsStyle.ClassicUltra) "classic ultra 24.2" else "lower decks padd 24.2"
+        ) {
             LcarsNumberMatrix(
                 rows = 5,
                 columns = 7,
@@ -510,6 +590,7 @@ private fun WeatherMainDeck(
     dense: Boolean = compact,
     framed: Boolean = false,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
 ) {
     val colors = LocalLcarsColors.current
     val spacing = LocalLcarsSpacing.current
@@ -522,7 +603,7 @@ private fun WeatherMainDeck(
             WeatherDeckHeader(report = report, compact = compact || dense)
         } else {
             LcarsBar(
-                color = colors.tacticalGreen,
+                color = colors.weatherActiveAccent,
                 height = if (compact) 24.dp else 32.dp,
                 startCap = true,
                 endCap = true,
@@ -548,6 +629,7 @@ private fun WeatherMainDeck(
                     report = report,
                     alertActive = alertActive,
                     compact = true,
+                    style = style,
                     modifier = Modifier
                         .weight(0.58f)
                         .fillMaxHeight(),
@@ -558,7 +640,12 @@ private fun WeatherMainDeck(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(spacing.gapStandard),
                 ) {
-                    ForecastPanel(report = report, compact = true, modifier = Modifier.weight(1f))
+                    ForecastPanel(
+                        report = report,
+                        compact = true,
+                        style = style,
+                        modifier = Modifier.weight(1f)
+                    )
                     LcarsLogConsole(
                         entries = weatherLogEntries(report, alertActive),
                         maxLines = 3,
@@ -585,6 +672,7 @@ private fun WeatherMainDeck(
                         alertActive = alertActive,
                         compact = false,
                         dense = dense,
+                        style = style,
                         modifier = Modifier.weight(1f),
                     )
                     LcarsLogConsole(
@@ -604,6 +692,7 @@ private fun WeatherMainDeck(
                         report = report,
                         compact = false,
                         dense = dense,
+                        style = style,
                         modifier = Modifier.weight(if (dense) 0.58f else 0.56f),
                     )
                     StationPanel(
@@ -618,12 +707,12 @@ private fun WeatherMainDeck(
         }
         if (!framed) {
             LcarsBar(
-                color = colors.a8,
+                color = colors.weatherSensorBar,
                 height = if (compact) 8.dp else 12.dp,
                 endCap = true,
-                label = "lcars 57436.2 / lower decks padd palette",
+                label = if (style == LcarsStyle.ClassicUltra) "lcars 57436.2 / classic ultra palette" else "lcars 57436.2 / lower decks padd palette",
                 labelAlign = LcarsLabelAlign.End,
-                labelColor = colors.a1,
+                labelColor = colors.weatherSensorLabel,
             )
         }
     }
@@ -752,6 +841,8 @@ private fun WeatherCommandRail(
 private fun WeatherButtonRow(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
+    onToggleStyle: (() -> Unit)? = null,
 ) {
     val colors = LocalLcarsColors.current
     val spacing = LocalLcarsSpacing.current
@@ -763,13 +854,13 @@ private fun WeatherButtonRow(
         horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
     ) {
         LcarsButton(
-            text = "local wx",
+            text = if (style == LcarsStyle.ClassicUltra) "classic style" else "decks style",
             color = colors.lightBlue,
             shape = LcarsButtonShape.BlockStart,
             minWidth = 0.dp,
             minHeight = 0.dp,
             modifier = Modifier.weight(1f),
-            onClick = {},
+            onClick = { onToggleStyle?.invoke() },
         )
         LcarsButton(
             text = if (alertActive) "clear advisory" else "storm advisory",
@@ -816,6 +907,7 @@ private fun CurrentConditionsPanel(
     compact: Boolean,
     dense: Boolean = compact,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
 ) {
     val colors = LocalLcarsColors.current
     val typography = LocalLcarsTypography.current
@@ -841,7 +933,7 @@ private fun CurrentConditionsPanel(
             WeatherInspectGraphic(
                 alertActive = alertActive,
                 iconType = report.iconType,
-                color = if (alertActive) colors.alertRed else colors.tacticalGreen,
+                color = if (alertActive) colors.alertRed else colors.weatherSensorLabel,
                 running = true,
                 modifier = Modifier
                     .weight(0.42f)
@@ -855,7 +947,7 @@ private fun CurrentConditionsPanel(
             ) {
                 LcarsNumericLabel(
                     label = report.temperatureC.toString().padStart(3, '0'),
-                    color = if (alertActive) colors.alertRed else colors.tacticalGreen,
+                    color = if (alertActive) colors.alertRed else colors.weatherSensorLabel,
                     height = if (compact) 34.dp else 36.dp,
                     labelWeight = if (compact) 0.20f else 0.17f,
                     rightWeight = if (compact) 0.38f else 0.41f,
@@ -889,14 +981,20 @@ private fun CurrentConditionsPanel(
             LcarsProgressBar(
                 progress = (report.humidityPercent / 100f).coerceIn(0f, 1f),
                 label = "humidity",
-                color = colors.tacticalGreen,
+                color = colors.weatherSensorLabel,
+                trackColor = colors.weatherMeterInactive,
+                labelColor = colors.weatherSensorLabel,
+                height = 16.dp,
                 modifier = Modifier.weight(1f),
             )
             LcarsProgressBar(
                 progress = ((report.windGustKt ?: report.windSpeedKt) / 40f).coerceIn(0f, 1f),
                 label = "wind shear",
-                color = colors.lightBlue,
+                color = colors.weatherBtnSecondary,
+                trackColor = colors.weatherMeterInactive,
+                labelColor = colors.weatherBtnSecondary,
                 alerting = alertActive,
+                height = 16.dp,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -952,6 +1050,7 @@ private fun ForecastPanel(
     compact: Boolean,
     dense: Boolean = compact,
     modifier: Modifier = Modifier,
+    style: LcarsStyle = LcarsStyle.LowerDecksPadd,
 ) {
     val colors = LocalLcarsColors.current
     val spacing = LocalLcarsSpacing.current
@@ -985,7 +1084,9 @@ private fun ForecastPanel(
 
     LcarsFramePanel(
         title = "forecast matrix",
-        footerLabel = selectedDay?.let { "${it.dayLabel} / four hour model" } ?: "five day model",
+        footerLabel = selectedDay?.let {
+            if (it.dateKey == dailyForecast.firstOrNull()?.dateKey) "${it.dayLabel} / hourly model" else "${it.dayLabel} / four hour model"
+        } ?: "five day model",
         modifier = modifier,
     ) {
         WeatherForecastIconStrip(
@@ -1012,7 +1113,7 @@ private fun ForecastPanel(
             LcarsStatusLight(
                 label = "station link",
                 active = report.live,
-                color = colors.tacticalGreen,
+                color = colors.weatherSensorLabel,
                 size = if (dense) 14.dp else 18.dp,
                 compact = dense,
                 modifier = Modifier.weight(1f),
@@ -1020,22 +1121,30 @@ private fun ForecastPanel(
             LcarsStatusLight(
                 label = "radar sweep",
                 active = true,
-                color = colors.a2,
+                color = colors.weatherSubHighlight,
                 size = if (dense) 14.dp else 18.dp,
                 compact = dense,
                 modifier = Modifier.weight(1f),
             )
         }
-        LcarsSegmentedMeter(
-            activeSegments = when (report.sourceStatus) {
-                WeatherSourceStatus.Live -> 9
-                WeatherSourceStatus.Loading -> 5
-                WeatherSourceStatus.Offline -> 3
-            },
+        var activeMeterValue by rememberSaveable(report.sourceStatus) {
+            mutableStateOf(
+                when (report.sourceStatus) {
+                    WeatherSourceStatus.Live -> 9
+                    WeatherSourceStatus.Loading -> 5
+                    WeatherSourceStatus.Offline -> 3
+                }
+            )
+        }
+
+        LcarsSegmentedSlider(
+            value = activeMeterValue,
+            onValueChange = { activeMeterValue = it },
             totalSegments = 12,
-            color = colors.tacticalGreen,
-            inactiveColor = colors.a7,
+            color = colors.weatherActiveAccent,
+            inactiveColor = colors.weatherMeterInactive,
             height = if (dense) 24.dp else 36.dp,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -1044,13 +1153,38 @@ private fun forecastRowsForSelectedDay(
     report: WeatherReport,
     selectedDateKey: String,
 ): List<WeatherForecastPeriod> {
-    val selectedRows = report.hourlyForecast
-        .filter { it.dateKey == selectedDateKey }
-        .filterIndexed { index, _ -> index % 4 == 0 }
-        .take(6)
+    val allDayPeriods = report.hourlyForecast.filter { it.dateKey == selectedDateKey }
+    val isToday = selectedDateKey == report.dailyForecast.firstOrNull()?.dateKey
 
-    return selectedRows.ifEmpty { report.forecast }.mapIndexed { index, period ->
-        period.copy(highlighted = index == 0)
+    if (isToday && allDayPeriods.isNotEmpty()) {
+        val now = LocalDateTime.now()
+        val currentHour = now.hour
+
+        // First row: current time
+        val currentTimePeriod = WeatherForecastPeriod(
+            period = now.format(DateTimeFormatter.ofPattern("HHmm", Locale.US)),
+            sky = report.condition,
+            temperature = report.temperatureC.toString(),
+            wind = report.windLabel,
+            iconType = report.iconType,
+            highlighted = true,
+            dateKey = selectedDateKey
+        )
+
+        // Upcoming hourly periods for today (hour > currentHour)
+        val upcomingPeriods = allDayPeriods.filter {
+            val periodHour = it.period.toIntOrNull()?.let { p -> p / 100 } ?: 0
+            periodHour > currentHour
+        }.take(5) // Max 5 more rows to make a total of 6
+
+        return listOf(currentTimePeriod) + upcomingPeriods
+    } else {
+        val selectedRows = allDayPeriods
+            .filterIndexed { index, _ -> index % 4 == 0 }
+            .take(6)
+        return selectedRows.ifEmpty { report.forecast }.mapIndexed { index, period ->
+            period.copy(highlighted = index == 0)
+        }
     }
 }
 
@@ -1233,13 +1367,14 @@ private fun WeatherGlyph(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalLcarsColors.current
+    val tempPath = remember { Path() }
 
     Canvas(modifier = modifier) {
         drawRect(
             color = colors.lightBlue.copy(alpha = 0.12f),
             size = size,
         )
-        drawWeatherIcon(iconType = iconType, colors = colors)
+        drawWeatherIcon(iconType = iconType, colors = colors, tempPath = tempPath)
         drawRect(
             color = colors.a2,
             style = Stroke(width = 3.dp.toPx()),
@@ -1335,18 +1470,20 @@ private fun WeatherMiniIcon(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalLcarsColors.current
+    val tempPath = remember { Path() }
 
     Canvas(modifier = modifier) {
         if (highlighted) {
             drawRect(color = colors.tacticalGreen.copy(alpha = 0.16f), size = size)
         }
-        drawWeatherIcon(iconType = iconType, colors = colors, compact = true)
+        drawWeatherIcon(iconType = iconType, colors = colors, tempPath = tempPath, compact = true)
     }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWeatherIcon(
     iconType: WeatherIconType,
     colors: com.lcars.ui.LcarsColors,
+    tempPath: Path,
     compact: Boolean = false,
 ) {
     val stroke = if (compact) 2.dp.toPx() else 3.dp.toPx()
@@ -1405,7 +1542,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWeatherIcon(
     }
 
     fun drawLightning() {
-        val path = Path().apply {
+        tempPath.reset()
+        tempPath.apply {
             moveTo(size.width * 0.53f, size.height * 0.56f)
             lineTo(size.width * 0.42f, size.height * 0.76f)
             lineTo(size.width * 0.53f, size.height * 0.74f)
@@ -1414,7 +1552,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWeatherIcon(
             lineTo(size.width * 0.56f, size.height * 0.68f)
             close()
         }
-        drawPath(path = path, color = colors.monoAmber)
+        drawPath(path = tempPath, color = colors.monoAmber)
     }
 
     fun drawHail() {
@@ -1434,54 +1572,56 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWeatherIcon(
         )
         WeatherIconType.SunCloud -> {
             drawSun(Offset(size.width * 0.62f, size.height * 0.36f), sunRadius)
-            drawCloud(Offset(size.width * 0.42f, size.height * 0.62f), size.width * 0.54f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.42f, size.height * 0.62f), size.width * 0.54f, colors.a4)
         }
         WeatherIconType.Cloud -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.58f), size.width * 0.62f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.58f), size.width * 0.62f, colors.a4)
         }
         WeatherIconType.Overcast -> {
-            drawCloud(Offset(size.width * 0.42f, size.height * 0.52f), size.width * 0.58f, colors.a7)
-            drawCloud(Offset(size.width * 0.56f, size.height * 0.64f), size.width * 0.56f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.42f, size.height * 0.52f), size.width * 0.58f, colors.a7)
+            drawCloud(tempPath, Offset(size.width * 0.56f, size.height * 0.64f), size.width * 0.56f, colors.a4)
         }
         WeatherIconType.Fog -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.48f), size.width * 0.56f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.48f), size.width * 0.56f, colors.a4)
             drawFogLines()
         }
         WeatherIconType.Drizzle -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.48f), size.width * 0.58f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.48f), size.width * 0.58f, colors.a4)
             drawRainLines(count = 3, color = colors.a2)
         }
         WeatherIconType.Rain -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.46f), size.width * 0.60f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.46f), size.width * 0.60f, colors.a4)
             drawRainLines(count = 4)
         }
         WeatherIconType.Snow -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.46f), size.width * 0.60f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.46f), size.width * 0.60f, colors.a4)
             drawSnowMarks()
         }
         WeatherIconType.Showers -> {
-            drawCloud(Offset(size.width * 0.44f, size.height * 0.44f), size.width * 0.52f, colors.a7)
-            drawCloud(Offset(size.width * 0.56f, size.height * 0.54f), size.width * 0.54f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.44f, size.height * 0.44f), size.width * 0.52f, colors.a7)
+            drawCloud(tempPath, Offset(size.width * 0.56f, size.height * 0.54f), size.width * 0.54f, colors.a4)
             drawRainLines(count = 5)
         }
         WeatherIconType.Thunder -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.44f), size.width * 0.60f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.44f), size.width * 0.60f, colors.a4)
             drawLightning()
         }
         WeatherIconType.Hail -> {
-            drawCloud(Offset(size.width * 0.48f, size.height * 0.44f), size.width * 0.60f, colors.a4)
+            drawCloud(tempPath, Offset(size.width * 0.48f, size.height * 0.44f), size.width * 0.60f, colors.a4)
             drawHail()
         }
     }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCloud(
+    path: Path,
     origin: Offset,
     width: Float,
     color: Color,
 ) {
     val height = width * 0.32f
-    val path = Path().apply {
+    path.reset()
+    path.apply {
         moveTo(origin.x - width * 0.44f, origin.y + height * 0.28f)
         cubicTo(
             origin.x - width * 0.38f,

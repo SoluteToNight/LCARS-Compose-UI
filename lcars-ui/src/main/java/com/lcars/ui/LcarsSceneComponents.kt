@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -223,6 +224,7 @@ private fun StarChartCanvas(
 ) {
     val colors = LocalLcarsColors.current
     val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
     val labelStyle = LocalLcarsTypography.current.labelSmall.copy(
         color = colors.a8,
         fontSize = 18.sp,
@@ -234,6 +236,30 @@ private fun StarChartCanvas(
         lineHeight = 14.sp,
     )
     val gridLabels = remember(seed) { generateGridLabels(seed, 80) }
+
+    val starLayouts = remember(stars, labelStyle, density) {
+        stars.map { star ->
+            if (star.labeled && star.label.isNotBlank()) {
+                textMeasurer.measure(
+                    text = lcarsLabel(star.label),
+                    style = labelStyle,
+                )
+            } else {
+                null
+            }
+        }
+    }
+
+    val gridLabelLayouts = remember(gridLabels, gridLabelStyle, density) {
+        gridLabels.map { label ->
+            textMeasurer.measure(
+                text = label,
+                style = gridLabelStyle,
+            )
+        }
+    }
+
+    val acceptedLabels = remember { mutableListOf<Rect>() }
 
     Canvas(modifier = modifier.background(Color.Black)) {
         val gridColor = colors.a3.copy(alpha = 0.58f)
@@ -257,19 +283,17 @@ private fun StarChartCanvas(
                 end = Offset(size.width, y),
                 strokeWidth = 1.dp.toPx(),
             )
-            val label = gridLabels[labelIndex % gridLabels.size]
+            val labelLayout = gridLabelLayouts[labelIndex % gridLabelLayouts.size]
             drawText(
-                textMeasurer = textMeasurer,
-                text = label,
+                textLayoutResult = labelLayout,
                 topLeft = Offset(8.dp.toPx(), y + 6.dp.toPx()),
-                style = gridLabelStyle,
             )
             labelIndex += 1
             y += gridStep
         }
 
-        val acceptedLabels = mutableListOf<Rect>()
-        stars.forEach { star ->
+        acceptedLabels.clear()
+        stars.forEachIndexed { index, star ->
             val center = Offset(
                 x = star.x.coerceIn(0f, 1f) * size.width,
                 y = star.y.coerceIn(0f, 1f) * size.height,
@@ -282,7 +306,8 @@ private fun StarChartCanvas(
                 center = center,
             )
 
-            if (star.labeled && star.label.isNotBlank()) {
+            val measured = starLayouts[index]
+            if (measured != null) {
                 val selectSize = 34.dp.toPx()
                 drawRect(
                     color = colors.lightBlue,
@@ -297,10 +322,6 @@ private fun StarChartCanvas(
                     style = Stroke(width = 3.dp.toPx()),
                 )
 
-                val measured = textMeasurer.measure(
-                    text = lcarsLabel(star.label),
-                    style = labelStyle,
-                )
                 val labelLeft = center.x + selectSize / 2f + 5.dp.toPx()
                 val labelTop = center.y - measured.size.height / 2f
                 val labelRect = Rect(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -40,15 +41,21 @@ fun LcarsElbow(
         LcarsElbowDirection.BottomRight -> Alignment.BottomStart
     }
 
-    Box(modifier = modifier.size(wingWidth, wingHeight)) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val t = thickness.toPx().coerceAtMost(min(size.width, size.height) * 0.72f)
-            val innerR = innerRadius.toPx().coerceAtMost(t / 2f)
-            drawPath(
-                path = lcarsElbowPath(direction, size.width, size.height, t, innerR),
-                color = color,
-            )
-        }
+    Box(
+        modifier = modifier
+            .size(wingWidth, wingHeight)
+            .drawWithCache {
+                val t = thickness.toPx().coerceAtMost(min(size.width, size.height) * 0.72f)
+                val innerR = innerRadius.toPx().coerceAtMost(t / 2f)
+                val path = lcarsElbowPath(direction, size.width, size.height, t, innerR)
+                onDrawBehind {
+                    drawPath(
+                        path = path,
+                        color = color,
+                    )
+                }
+            }
+    ) {
         LcarsText(
             text = text,
             modifier = Modifier

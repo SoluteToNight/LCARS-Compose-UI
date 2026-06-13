@@ -34,9 +34,11 @@ internal object DeviceLocationProvider {
             return@withContext WeatherLocation(it.latitude, it.longitude)
         }
 
-        providers.firstOrNull()?.let { provider ->
-            requestSingleLocation(manager, provider)?.let {
-                WeatherLocation(it.latitude, it.longitude)
+        kotlinx.coroutines.withTimeoutOrNull(5000L) {
+            providers.firstOrNull()?.let { provider ->
+                requestSingleLocation(manager, provider)?.let {
+                    WeatherLocation(it.latitude, it.longitude)
+                }
             }
         }
     }

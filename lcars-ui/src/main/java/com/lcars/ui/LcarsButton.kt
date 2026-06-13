@@ -43,6 +43,7 @@ fun LcarsButton(
     minHeight: Dp = LocalLcarsSpacing.current.buttonMinHeight,
 ) {
     val colors = LocalLcarsColors.current
+    val soundService = LocalLcarsSoundService.current
     val alertColor = if (alerting) {
         val transition = rememberInfiniteTransition(label = "LcarsAlert")
         val animatedColor by transition.animateColor(
@@ -87,7 +88,10 @@ fun LcarsButton(
             .defaultMinSize(minWidth = minWidth, minHeight = minHeight)
             .clip(buttonShape)
             .background(backgroundColor)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = {
+                soundService.playClick()
+                onClick()
+            })
             .alpha(if (enabled) 1f else 0f)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.BottomEnd,

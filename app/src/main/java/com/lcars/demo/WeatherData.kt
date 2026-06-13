@@ -306,14 +306,14 @@ private fun formatUpdated(value: String): String {
     if (value.isBlank()) return "sync complete"
     return runCatching {
         val time = LocalDateTime.parse(value)
-        "updated ${time.format(DateTimeFormatter.ofPattern("HHmm"))}"
+        "updated ${time.format(DateTimeFormatter.ofPattern("HHmm", Locale.US))}"
     }.getOrDefault("sync complete")
 }
 
 private fun formatHour(value: String): String {
     if (value.isBlank()) return "----"
     return runCatching {
-        LocalDateTime.parse(value).format(DateTimeFormatter.ofPattern("HHmm"))
+        LocalDateTime.parse(value).format(DateTimeFormatter.ofPattern("HHmm", Locale.US))
     }.getOrDefault("----")
 }
 
