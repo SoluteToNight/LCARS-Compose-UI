@@ -98,7 +98,12 @@ fun AtmosphericConditionsDemoScreen(
     val context = LocalContext.current
     val inPreview = LocalInspectionMode.current
     var alertActive by rememberSaveable { mutableStateOf(false) }
-    var weatherReport by remember { mutableStateOf(WeatherReport.placeholder()) }
+    var weatherReport by remember {
+        mutableStateOf(
+            if (inPreview) WeatherReport.placeholder()
+            else WeatherCache.load(context)?.report ?: WeatherReport.placeholder()
+        )
+    }
     var locationPermissionGranted by remember { mutableStateOf(hasWeatherLocationPermission(context)) }
     var locationPermissionRequested by rememberSaveable { mutableStateOf(false) }
     val colors = LocalLcarsColors.current
@@ -138,7 +143,14 @@ fun AtmosphericConditionsDemoScreen(
                 OpenMeteoWeatherClient.fetchWeather(location)
             }
         }.getOrElse {
-            WeatherReport.placeholder(WeatherSourceStatus.Offline)
+            if (weatherReport.sourceStatus == WeatherSourceStatus.Loading) {
+                WeatherReport.placeholder(WeatherSourceStatus.Offline)
+            } else {
+                weatherReport
+            }
+        }
+        if (weatherReport.sourceStatus == WeatherSourceStatus.Live) {
+            WeatherCache.save(context, weatherReport)
         }
     }
 
@@ -888,6 +900,7 @@ private fun WeatherButtonRow(
 private fun AlertStrip(report: WeatherReport, alertActive: Boolean) {
     val message = when {
         alertActive -> "storm advisory active / pressure drop detected"
+        !report.live && report.sourceStatus == WeatherSourceStatus.Cached -> "local cache active / sync pending"
         !report.live -> "weather uplink pending / local cache displayed"
         report.advisorySuggested -> "live weather advisory suggested / review conditions"
         else -> "surface weather nominal / live uplink active"
@@ -1132,6 +1145,7 @@ private fun ForecastPanel(
                 when (report.sourceStatus) {
                     WeatherSourceStatus.Live -> 9
                     WeatherSourceStatus.Loading -> 5
+                    WeatherSourceStatus.Cached -> 7
                     WeatherSourceStatus.Offline -> 3
                 }
             )
@@ -1202,6 +1216,7 @@ private fun StationPanel(
     val relayLabel = when (report.sourceStatus) {
         WeatherSourceStatus.Live -> "live"
         WeatherSourceStatus.Loading -> "pending"
+        WeatherSourceStatus.Cached -> "cached"
         WeatherSourceStatus.Offline -> "cached"
     }
 
@@ -1721,6 +1736,7 @@ private fun weatherLogEntries(report: WeatherReport, alertActive: Boolean): List
     when (report.sourceStatus) {
         WeatherSourceStatus.Live -> add(LcarsLogEntry("open-meteo uplink established", LcarsLogSeverity.Success, "wx"))
         WeatherSourceStatus.Loading -> add(LcarsLogEntry("weather uplink acquisition pending", LcarsLogSeverity.Info, "wx"))
+        WeatherSourceStatus.Cached -> add(LcarsLogEntry("local cache loaded; sync in progress", LcarsLogSeverity.Info, "wx"))
         WeatherSourceStatus.Offline -> add(LcarsLogEntry("weather uplink offline; local cache active", LcarsLogSeverity.Alert, "wx"))
     }
     add(LcarsLogEntry("${report.locationLabel} loaded", LcarsLogSeverity.Info, "loc"))

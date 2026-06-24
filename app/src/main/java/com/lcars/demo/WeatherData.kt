@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
@@ -45,7 +46,55 @@ internal data class WeatherReport(
             pressureHpa < 1002.0 ||
             condition.contains("thunder", ignoreCase = true)
 
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("locationLabel", locationLabel)
+        put("stationLabel", stationLabel)
+        put("latitudeLabel", latitudeLabel)
+        put("longitudeLabel", longitudeLabel)
+        put("elevationLabel", elevationLabel)
+        put("updatedLabel", updatedLabel)
+        put("sourceStatus", sourceStatus.name)
+        put("temperatureC", temperatureC)
+        putOpt("apparentTemperatureC", apparentTemperatureC)
+        put("condition", condition)
+        put("humidityPercent", humidityPercent)
+        put("pressureHpa", pressureHpa)
+        putOpt("windDirectionDegrees", windDirectionDegrees)
+        put("windSpeedKt", windSpeedKt)
+        putOpt("windGustKt", windGustKt)
+        putOpt("cloudCoverPercent", cloudCoverPercent)
+        putOpt("precipitationInches", precipitationInches)
+        put("iconType", iconType.name)
+        put("forecast", JSONArray().apply { forecast.forEach { put(it.toJson()) } })
+        put("dailyForecast", JSONArray().apply { dailyForecast.forEach { put(it.toJson()) } })
+        put("hourlyForecast", JSONArray().apply { hourlyForecast.forEach { put(it.toJson()) } })
+    }
+
     companion object {
+        fun fromJson(json: JSONObject): WeatherReport = WeatherReport(
+            locationLabel = json.optString("locationLabel", ""),
+            stationLabel = json.optString("stationLabel", ""),
+            latitudeLabel = json.optString("latitudeLabel", ""),
+            longitudeLabel = json.optString("longitudeLabel", ""),
+            elevationLabel = json.optString("elevationLabel", ""),
+            updatedLabel = json.optString("updatedLabel", ""),
+            sourceStatus = runCatching { WeatherSourceStatus.valueOf(json.optString("sourceStatus", "Cached")) }.getOrDefault(WeatherSourceStatus.Cached),
+            temperatureC = json.optInt("temperatureC", 0),
+            apparentTemperatureC = if (json.has("apparentTemperatureC") && !json.isNull("apparentTemperatureC")) json.optInt("apparentTemperatureC") else null,
+            condition = json.optString("condition", ""),
+            humidityPercent = json.optInt("humidityPercent", 0),
+            pressureHpa = json.optDouble("pressureHpa", 0.0),
+            windDirectionDegrees = if (json.has("windDirectionDegrees") && !json.isNull("windDirectionDegrees")) json.optInt("windDirectionDegrees") else null,
+            windSpeedKt = json.optInt("windSpeedKt", 0),
+            windGustKt = if (json.has("windGustKt") && !json.isNull("windGustKt")) json.optInt("windGustKt") else null,
+            cloudCoverPercent = if (json.has("cloudCoverPercent") && !json.isNull("cloudCoverPercent")) json.optInt("cloudCoverPercent") else null,
+            precipitationInches = if (json.has("precipitationInches") && !json.isNull("precipitationInches")) json.optDouble("precipitationInches") else null,
+            iconType = runCatching { WeatherIconType.valueOf(json.optString("iconType", "Cloud")) }.getOrDefault(WeatherIconType.Cloud),
+            forecast = json.optJSONArray("forecast")?.let { arr -> (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { WeatherForecastPeriod.fromJson(it) } } }.orEmpty(),
+            dailyForecast = json.optJSONArray("dailyForecast")?.let { arr -> (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { WeatherForecastDay.fromJson(it) } } }.orEmpty(),
+            hourlyForecast = json.optJSONArray("hourlyForecast")?.let { arr -> (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { WeatherForecastPeriod.fromJson(it) } } }.orEmpty(),
+        )
+
         fun placeholder(status: WeatherSourceStatus = WeatherSourceStatus.Loading): WeatherReport = WeatherReport(
             locationLabel = "akron oh 44307",
             stationLabel = "akron grid",
@@ -99,7 +148,29 @@ internal data class WeatherForecastDay(
     val lowTemperature: String,
     val iconType: WeatherIconType,
     val highlighted: Boolean = false,
-)
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("dateKey", dateKey)
+        put("dayLabel", dayLabel)
+        put("sky", sky)
+        put("highTemperature", highTemperature)
+        put("lowTemperature", lowTemperature)
+        put("iconType", iconType.name)
+        put("highlighted", highlighted)
+    }
+
+    companion object {
+        fun fromJson(json: JSONObject): WeatherForecastDay = WeatherForecastDay(
+            dateKey = json.optString("dateKey", ""),
+            dayLabel = json.optString("dayLabel", ""),
+            sky = json.optString("sky", ""),
+            highTemperature = json.optString("highTemperature", ""),
+            lowTemperature = json.optString("lowTemperature", ""),
+            iconType = runCatching { WeatherIconType.valueOf(json.optString("iconType", "Cloud")) }.getOrDefault(WeatherIconType.Cloud),
+            highlighted = json.optBoolean("highlighted", false),
+        )
+    }
+}
 
 internal data class WeatherForecastPeriod(
     val period: String,
@@ -109,7 +180,29 @@ internal data class WeatherForecastPeriod(
     val iconType: WeatherIconType,
     val highlighted: Boolean = false,
     val dateKey: String = "",
-)
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("period", period)
+        put("sky", sky)
+        put("temperature", temperature)
+        put("wind", wind)
+        put("iconType", iconType.name)
+        put("highlighted", highlighted)
+        put("dateKey", dateKey)
+    }
+
+    companion object {
+        fun fromJson(json: JSONObject): WeatherForecastPeriod = WeatherForecastPeriod(
+            period = json.optString("period", ""),
+            sky = json.optString("sky", ""),
+            temperature = json.optString("temperature", ""),
+            wind = json.optString("wind", ""),
+            iconType = runCatching { WeatherIconType.valueOf(json.optString("iconType", "Cloud")) }.getOrDefault(WeatherIconType.Cloud),
+            highlighted = json.optBoolean("highlighted", false),
+            dateKey = json.optString("dateKey", ""),
+        )
+    }
+}
 
 internal enum class WeatherIconType {
     Sun,
@@ -129,6 +222,7 @@ internal enum class WeatherSourceStatus {
     Loading,
     Live,
     Offline,
+    Cached,
 }
 
 internal object OpenMeteoWeatherClient {
