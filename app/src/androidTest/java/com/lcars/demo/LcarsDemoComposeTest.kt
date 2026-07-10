@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.lcars.ui.LcarsResponsiveScaffold
 import org.junit.Rule
@@ -54,6 +55,20 @@ class LcarsDemoComposeTest {
 
         composeRule.onNodeWithText("ATMOSPHERIC CONDITIONS").assertIsDisplayed()
         composeRule.onNodeWithText("CURRENT CONDITIONS").assertIsDisplayed()
+    }
+
+    @Test
+    fun demoShell_switchesToComponentShowcase() {
+        composeRule.setContent {
+            DemoLcarsTheme {
+                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
+            }
+        }
+
+        composeRule.onNodeWithText("COMPONENTS").performClick()
+        composeRule.onNodeWithText("COMPONENT SHOWCASE").assertIsDisplayed()
+        composeRule.onNodeWithText("CORE TOKENS + ATOMS").assertIsDisplayed()
+        composeRule.onNodeWithText("PADD VARIANTS").performScrollTo().assertIsDisplayed()
     }
 
     @Test

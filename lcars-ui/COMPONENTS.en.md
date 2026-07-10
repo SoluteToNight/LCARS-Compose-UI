@@ -127,6 +127,65 @@ Key parameters:
 
 Use for: catalog sections, status panels, and data panels.
 
+## Pattern Components
+
+These components sit between atoms and full business scenes. They extract repeated LCARS compositions from demos without binding to weather, NMEA, or other domain data.
+
+### `LcarsSegmentedBar`
+
+Purpose: weighted multi-segment LCARS color bar with optional labels inside each segment.
+
+Key parameters:
+
+- `segments`: list of `LcarsBarSegment`, each with `weight`, `color`, and optional `label`.
+- `height`: bar height.
+- `gap`: gap between segments.
+- `labelColor`: segment label color.
+
+Use for: console top frame bars, status color strips, and PADD variant sample bars.
+
+### `LcarsConsoleFrame`
+
+Purpose: abstracts a typical console shell: left rail, top bar, main content area, and L-shaped corner bridge.
+
+Key parameters:
+
+- `leftRail`: left slot.
+- `topBar`: top bar slot.
+- `content`: main content slot.
+- `compact`, `railWidth`, `topBarHeight`: size overrides.
+- `frameColor`: primary frame color.
+
+Use for: weather panels, ship consoles, and wide landscape dashboard shells.
+
+### `LcarsFramedCommandRail`
+
+Purpose: command rail with a rounded top frame base, suitable for replacing hand-written side frame button groups in demos.
+
+Key parameters:
+
+- `items`: list of `LcarsFramedRailItem`.
+- `side`: rounding direction.
+- `topInset` / `topCornerRadius`: top elbow geometry.
+- `header` / `footer`: optional slots.
+- `onCommandClick`: command callback.
+
+Use for: main navigation, mode switching, alert controls, and side frames with large filler blocks.
+
+### `LcarsOptionStrip`
+
+Purpose: customizable LCARS option strip with built-in selected border and bottom label rail.
+
+Key parameters:
+
+- `items`: option data.
+- `selectedItem`: selected item, nullable.
+- `onSelect`: selection callback.
+- `label`: bottom label mapper.
+- `itemContent`: custom content for each option block.
+
+Use for: forecast day strips, PADD variant selectors, and icon/thumbnail option groups.
+
 ## Controls
 
 ### `LcarsCommandRail`
@@ -201,6 +260,8 @@ Key parameters:
 - `entries`: list of `LcarsTelemetryEntry`.
 - `alerting`: changes normal-state rendering during alerts.
 - `singleColumnBelow`: width breakpoint for single-column layout.
+- `compact`: uses tighter typography and padding.
+- `layout`: `Grid`, `CompactGrid`, or `Inline`. `Inline` is for compressed horizontal readout strips.
 
 Use for: coordinates, sensor status, system metrics, and device state.
 

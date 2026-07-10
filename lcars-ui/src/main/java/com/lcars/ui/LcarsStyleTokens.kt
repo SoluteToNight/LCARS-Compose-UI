@@ -66,17 +66,16 @@ fun LcarsStyle.colors(): LcarsColors = when (this) {
         gray = LcarsClassicColors.gray,
         spaceWhite = LcarsClassicColors.spaceWhite,
 
-        // Semantic mapping for Weather Screen (TNG Command/Operations)
-        weatherFrame = LcarsClassicColors.red,
-        weatherBtnStyle = LcarsClassicColors.gold,
-        weatherBtnSecondary = LcarsClassicColors.butterscotch,
-        weatherBtnInactive = LcarsClassicColors.orange,
-        weatherActiveAccent = LcarsClassicColors.gold,
-        weatherInactiveAccent = LcarsClassicColors.butterscotch,
-        weatherSubHighlight = LcarsClassicColors.almondCreme,
-        weatherMeterInactive = LcarsClassicColors.gray,
-        weatherSensorBar = LcarsClassicColors.red,
-        weatherSensorLabel = LcarsClassicColors.gold,
+        framePrimary = LcarsClassicColors.red,
+        commandPrimary = LcarsClassicColors.gold,
+        commandSecondary = LcarsClassicColors.butterscotch,
+        commandInactive = LcarsClassicColors.orange,
+        activeAccent = LcarsClassicColors.gold,
+        inactiveAccent = LcarsClassicColors.butterscotch,
+        subHighlight = LcarsClassicColors.almondCreme,
+        meterInactive = LcarsClassicColors.gray,
+        sensorBar = LcarsClassicColors.red,
+        readoutAccent = LcarsClassicColors.gold,
     )
     LcarsStyle.LowerDecks -> LcarsColors(
         monoAmber = Color(0xFFFF9911),

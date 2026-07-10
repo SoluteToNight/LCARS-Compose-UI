@@ -11,6 +11,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.text.style.TextGeometricTransform
+
 @Composable
 fun LcarsText(
     text: String,
@@ -24,7 +26,13 @@ fun LcarsText(
     autoFit: Boolean = true,
     softWrap: Boolean = false,
 ) {
-    val mergedStyle = style.merge(
+    val containsChinese = text.any { it.code in 0x4E00..0x9FFF }
+    val baseStyle = if (containsChinese) {
+        style.copy(textGeometricTransform = TextGeometricTransform(scaleX = 0.7f))
+    } else {
+        style
+    }
+    val mergedStyle = baseStyle.merge(
         TextStyle(
             color = color,
             textAlign = textAlign ?: TextAlign.Unspecified

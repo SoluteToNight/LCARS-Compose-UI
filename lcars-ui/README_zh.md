@@ -62,6 +62,7 @@ LcarsTheme(
 - `LcarsBar`：带可选端帽和内嵌标签的水平 LCARS 条块。
 - `LcarsElbow`：四方向 Canvas 弯角几何。
 - `LcarsFramePanel`：带 LCARS 标题/页脚条的内容框架。
+- `LcarsSegmentedBar`、`LcarsConsoleFrame`、`LcarsFramedCommandRail`、`LcarsOptionStrip`：从 demo 反哺出的中层 pattern 组件，用于搭建自己的 LCARS 设计系统。
 - `LcarsTelemetryPanel`：响应式遥测读数网格。
 - `LcarsDataTable`：高密度状态表格。
 

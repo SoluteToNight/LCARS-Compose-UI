@@ -62,6 +62,7 @@ The default font is Antonio, a narrow open-source display family distributed und
 - `LcarsBar`: horizontal LCARS bar with optional caps and embedded label.
 - `LcarsElbow`: four-direction Canvas elbow geometry.
 - `LcarsFramePanel`: framed content section with LCARS title/footer bars.
+- `LcarsSegmentedBar`, `LcarsConsoleFrame`, `LcarsFramedCommandRail`, `LcarsOptionStrip`: middle-layer pattern components extracted from demos for building custom LCARS design systems.
 - `LcarsTelemetryPanel`: responsive telemetry readout grid.
 - `LcarsDataTable`: dense status table.
 

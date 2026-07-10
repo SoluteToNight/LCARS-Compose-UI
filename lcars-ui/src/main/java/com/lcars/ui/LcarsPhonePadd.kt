@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -481,15 +480,15 @@ fun LcarsPaddDataLines(
         verticalArrangement = Arrangement.spacedBy((metrics.gap / 2).coerceAtLeast(1.dp)),
     ) {
         lines.take(maxLines).forEach {
-            BasicText(
-                text = lcarsLabel(it),
+            LcarsText(
+                text = it,
                 modifier = Modifier.fillMaxWidth(),
-                style = typography.telemetry.copy(
-                    color = color,
-                    textAlign = TextAlign.Start,
-                ),
+                style = typography.telemetry,
+                color = color,
+                textAlign = TextAlign.Start,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                autoFit = false,
             )
         }
     }
@@ -512,16 +511,17 @@ fun LcarsPaddMessage(
             .padding(12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(
-            text = lcarsLabel(text),
+        LcarsText(
+            text = text,
             style = LocalLcarsTypography.current.header.copy(
-                color = textColor,
-                textAlign = TextAlign.Center,
                 fontSize = 34.sp,
                 lineHeight = 36.sp,
             ),
+            color = textColor,
+            textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            autoFit = false,
         )
     }
 }

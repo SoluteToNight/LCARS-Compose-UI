@@ -22,6 +22,12 @@ enum class LcarsTelemetryStatus {
     Alert,
 }
 
+enum class LcarsTelemetryLayout {
+    Grid,
+    CompactGrid,
+    Inline,
+}
+
 data class LcarsTelemetryEntry(
     val label: String,
     val value: String,
@@ -36,22 +42,24 @@ fun LcarsTelemetryPanel(
     alerting: Boolean = false,
     singleColumnBelow: Dp = 480.dp,
     compact: Boolean = false,
+    layout: LcarsTelemetryLayout = if (compact) LcarsTelemetryLayout.CompactGrid else LcarsTelemetryLayout.Grid,
 ) {
     val colors = LocalLcarsColors.current
     val typography = LocalLcarsTypography.current
     val spacing = LocalLcarsSpacing.current
     val gap = spacing.gapStandard
+    val resolvedCompact = compact || layout == LcarsTelemetryLayout.CompactGrid || layout == LcarsTelemetryLayout.Inline
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(colors.panel)
-            .padding(if (compact) gap else spacing.panelPadding),
-        verticalArrangement = Arrangement.spacedBy(if (compact) gap / 2f else gap),
+            .padding(if (resolvedCompact) gap else spacing.panelPadding),
+        verticalArrangement = Arrangement.spacedBy(if (resolvedCompact) gap / 2f else gap),
     ) {
         LcarsText(
             text = title,
-            style = if (compact) {
+            style = if (resolvedCompact) {
                 typography.labelSmall.copy(
                     color = colors.auxiliaryTan,
                     fontSize = 13.sp,
@@ -62,36 +70,53 @@ fun LcarsTelemetryPanel(
             },
             maxLines = 1,
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            if (maxWidth < singleColumnBelow) {
-                Column(verticalArrangement = Arrangement.spacedBy(if (compact) gap / 2f else gap)) {
-                    entries.forEach { entry ->
-                        TelemetryCell(
-                            entry = entry,
-                            alerting = alerting,
-                            compact = compact,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+        if (layout == LcarsTelemetryLayout.Inline) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(gap / 2f),
+            ) {
+                entries.forEach { entry ->
+                    TelemetryCell(
+                        entry = entry,
+                        alerting = alerting,
+                        compact = true,
+                        inline = true,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
-            } else {
-                val columns = if (compact && maxWidth >= 300.dp) 3 else 2
-                Column(verticalArrangement = Arrangement.spacedBy(if (compact) gap / 2f else gap)) {
-                    entries.chunked(columns).forEach { rowEntries ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (compact) gap / 2f else gap),
-                        ) {
-                            rowEntries.forEach { entry ->
-                                TelemetryCell(
-                                    entry = entry,
-                                    alerting = alerting,
-                                    compact = compact,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            repeat(columns - rowEntries.size) {
-                                Spacer(modifier = Modifier.weight(1f))
+            }
+        } else {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                if (maxWidth < singleColumnBelow) {
+                    Column(verticalArrangement = Arrangement.spacedBy(if (resolvedCompact) gap / 2f else gap)) {
+                        entries.forEach { entry ->
+                            TelemetryCell(
+                                entry = entry,
+                                alerting = alerting,
+                                compact = resolvedCompact,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                } else {
+                    val columns = if (layout == LcarsTelemetryLayout.CompactGrid && maxWidth >= 300.dp) 3 else 2
+                    Column(verticalArrangement = Arrangement.spacedBy(if (resolvedCompact) gap / 2f else gap)) {
+                        entries.chunked(columns).forEach { rowEntries ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(if (resolvedCompact) gap / 2f else gap),
+                            ) {
+                                rowEntries.forEach { entry ->
+                                    TelemetryCell(
+                                        entry = entry,
+                                        alerting = alerting,
+                                        compact = resolvedCompact,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                                repeat(columns - rowEntries.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }
@@ -107,6 +132,7 @@ private fun TelemetryCell(
     alerting: Boolean,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    inline: Boolean = false,
 ) {
     val colors = LocalLcarsColors.current
     val typography = LocalLcarsTypography.current
@@ -127,9 +153,9 @@ private fun TelemetryCell(
             text = entry.label,
             style = if (compact) {
                 typography.labelSmall.copy(
-                    color = colors.violet,
-                    fontSize = 12.sp,
-                    lineHeight = 13.sp,
+                    color = if (inline) colors.a3 else colors.violet,
+                    fontSize = if (inline) 10.sp else 12.sp,
+                    lineHeight = if (inline) 11.sp else 13.sp,
                 )
             } else {
                 typography.labelSmall.copy(color = colors.violet)
@@ -139,7 +165,8 @@ private fun TelemetryCell(
         LcarsText(
             text = entry.value,
             style = if (compact) {
-                typography.labelSmall.copy(
+                val baseStyle = if (inline) typography.telemetry else typography.labelSmall
+                baseStyle.copy(
                     color = valueColor,
                     fontSize = 12.sp,
                     lineHeight = 13.sp,

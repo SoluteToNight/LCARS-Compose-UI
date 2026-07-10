@@ -22,10 +22,12 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,11 +72,14 @@ import com.lcars.ui.LcarsNumericLabel
 import com.lcars.ui.LcarsProgressBar
 import com.lcars.ui.LcarsReadoutTicker
 import com.lcars.ui.LcarsResponsiveScaffold
+import com.lcars.ui.LcarsBarSegment
+import com.lcars.ui.LcarsSegmentedBar
 import com.lcars.ui.LcarsSegmentedMeter
 import com.lcars.ui.LcarsSegmentedSlider
 import com.lcars.ui.LcarsStatusLight
 import com.lcars.ui.LcarsTargetScanner
 import com.lcars.ui.LcarsTelemetryEntry
+import com.lcars.ui.LcarsTelemetryLayout
 import com.lcars.ui.LcarsTelemetryPanel
 import com.lcars.ui.LcarsTelemetryStatus
 import com.lcars.ui.LcarsText
@@ -97,7 +102,17 @@ fun AtmosphericConditionsDemoScreen(
 ) {
     val context = LocalContext.current
     val inPreview = LocalInspectionMode.current
-    var alertActive by rememberSaveable { mutableStateOf(false) }
+
+    // NMC warning states
+    var viewMode by rememberSaveable { mutableStateOf(DemoViewMode.Telemetry) }
+    var alertsList by remember { mutableStateOf<List<NmcAlert>>(emptyList()) }
+    var selectedAlert by remember { mutableStateOf<NmcAlert?>(null) }
+    var selectedSector by rememberSaveable { mutableStateOf("ALL SECTORS") }
+    var resolvedProvince by remember { mutableStateOf<String?>(null) }
+    var isNmcLoading by remember { mutableStateOf(false) }
+    var manualAlertOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var simulatedAlert by remember { mutableStateOf<NmcAlert?>(null) }
+
     var weatherReport by remember {
         mutableStateOf(
             if (inPreview) WeatherReport.placeholder()
@@ -154,6 +169,72 @@ fun AtmosphericConditionsDemoScreen(
         }
     }
 
+    // NMC Alerts fetching LaunchedEffect
+    LaunchedEffect(inPreview, locationPermissionGranted) {
+        if (inPreview) {
+            alertsList = NmcAlertClient.mockAlerts
+            selectedAlert = NmcAlertClient.mockAlerts.firstOrNull()
+            return@LaunchedEffect
+        }
+        isNmcLoading = true
+        val fetched = NmcAlertClient.fetchAlerts()
+        alertsList = fetched
+        selectedAlert = fetched.firstOrNull()
+        isNmcLoading = false
+    }
+
+    // Geolocation for auto-selecting local NMC sector
+    LaunchedEffect(locationPermissionGranted) {
+        if (locationPermissionGranted && !inPreview) {
+            val location = DeviceLocationProvider.currentLocation(context)
+            if (location != null) {
+                val province = NmcAlertClient.resolveProvince(context, location.latitude, location.longitude)
+                if (province != null) {
+                    resolvedProvince = province
+                    selectedSector = province
+                }
+            }
+        }
+    }
+
+    // Calculate system alert active state
+    val sectorAlerts = remember(alertsList, selectedSector) {
+        if (selectedSector == "ALL SECTORS") {
+            alertsList
+        } else {
+            alertsList.filter { it.grid == selectedSector }
+        }
+    }
+    val hasSectorAlert = remember(sectorAlerts) {
+        sectorAlerts.any { it.level == NmcAlertLevel.Red || it.level == NmcAlertLevel.Orange || it.level == NmcAlertLevel.Yellow }
+    }
+    val systemAlertActive = manualAlertOverride ?: (hasSectorAlert || simulatedAlert != null)
+
+    // Auto-select first alert when filtered list changes
+    LaunchedEffect(sectorAlerts) {
+        if (selectedAlert == null || !sectorAlerts.any { it.alertId == selectedAlert?.alertId }) {
+            selectedAlert = sectorAlerts.firstOrNull()
+        }
+    }
+
+    val onGenerateRandomAlert = {
+        val newAlert = generateRandomAlert()
+        simulatedAlert = newAlert
+        manualAlertOverride = true
+    }
+
+    val onClearSimulatedAlert = {
+        simulatedAlert = null
+        manualAlertOverride = null
+    }
+    val onToggleAlert = {
+        if (systemAlertActive) {
+            onClearSimulatedAlert()
+        } else {
+            manualAlertOverride = true
+        }
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -165,8 +246,21 @@ fun AtmosphericConditionsDemoScreen(
             portrait = {
                 WeatherPortrait(
                     report = weatherReport,
-                    alertActive = alertActive,
-                    onToggleAlert = { alertActive = !alertActive },
+                    alertActive = systemAlertActive,
+                    onToggleAlert = onToggleAlert,
+                    viewMode = viewMode,
+                    onToggleViewMode = {
+                        viewMode = if (viewMode == DemoViewMode.Telemetry) DemoViewMode.Alerts else DemoViewMode.Telemetry
+                    },
+                    alertsList = alertsList,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = { selectedAlert = it },
+                    selectedSector = selectedSector,
+                    onSelectSector = { selectedSector = it },
+                    resolvedProvince = resolvedProvince,
+                    isNmcLoading = isNmcLoading,
+                    simulatedAlert = simulatedAlert,
+                    onClearSimulatedAlert = onClearSimulatedAlert,
                     modifier = Modifier.fillMaxSize(),
                     style = style,
                     onToggleStyle = onToggleStyle,
@@ -175,8 +269,21 @@ fun AtmosphericConditionsDemoScreen(
             compactLandscape = {
                 WeatherCompactLandscape(
                     report = weatherReport,
-                    alertActive = alertActive,
-                    onToggleAlert = { alertActive = !alertActive },
+                    alertActive = systemAlertActive,
+                    onToggleAlert = onToggleAlert,
+                    viewMode = viewMode,
+                    onViewModeChange = { viewMode = it },
+                    hasSectorAlert = hasSectorAlert,
+                    onGenerateAlert = onGenerateRandomAlert,
+                    alertsList = alertsList,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = { selectedAlert = it },
+                    selectedSector = selectedSector,
+                    onSelectSector = { selectedSector = it },
+                    resolvedProvince = resolvedProvince,
+                    isNmcLoading = isNmcLoading,
+                    simulatedAlert = simulatedAlert,
+                    onClearSimulatedAlert = onClearSimulatedAlert,
                     modifier = Modifier.fillMaxSize(),
                     style = style,
                     onToggleStyle = onToggleStyle,
@@ -185,8 +292,21 @@ fun AtmosphericConditionsDemoScreen(
             wideLandscape = {
                 WeatherWideLandscape(
                     report = weatherReport,
-                    alertActive = alertActive,
-                    onToggleAlert = { alertActive = !alertActive },
+                    alertActive = systemAlertActive,
+                    onToggleAlert = onToggleAlert,
+                    viewMode = viewMode,
+                    onViewModeChange = { viewMode = it },
+                    hasSectorAlert = hasSectorAlert,
+                    onGenerateAlert = onGenerateRandomAlert,
+                    alertsList = alertsList,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = { selectedAlert = it },
+                    selectedSector = selectedSector,
+                    onSelectSector = { selectedSector = it },
+                    resolvedProvince = resolvedProvince,
+                    isNmcLoading = isNmcLoading,
+                    simulatedAlert = simulatedAlert,
+                    onClearSimulatedAlert = onClearSimulatedAlert,
                     modifier = Modifier.fillMaxSize(),
                     style = style,
                     onToggleStyle = onToggleStyle,
@@ -201,6 +321,19 @@ private fun WeatherWideLandscape(
     report: WeatherReport,
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onViewModeChange: (DemoViewMode) -> Unit,
+    hasSectorAlert: Boolean,
+    onGenerateAlert: () -> Unit,
+    alertsList: List<NmcAlert>,
+    selectedAlert: NmcAlert?,
+    onSelectAlert: (NmcAlert) -> Unit,
+    selectedSector: String,
+    onSelectSector: (String) -> Unit,
+    resolvedProvince: String?,
+    isNmcLoading: Boolean,
+    simulatedAlert: NmcAlert?,
+    onClearSimulatedAlert: () -> Unit,
     modifier: Modifier = Modifier,
     style: LcarsStyle = LcarsStyle.LowerDecksPadd,
     onToggleStyle: (() -> Unit)? = null,
@@ -211,20 +344,44 @@ private fun WeatherWideLandscape(
         WeatherPaddLandscapeFrame(
             alertActive = alertActive,
             onToggleAlert = onToggleAlert,
+            viewMode = viewMode,
+            onViewModeChange = onViewModeChange,
+            hasSectorAlert = hasSectorAlert,
+            onGenerateAlert = onGenerateAlert,
             compact = false,
             dense = dense,
             modifier = Modifier.fillMaxSize(),
             style = style,
             onToggleStyle = onToggleStyle,
         ) {
-            WeatherMainDeck(
-                report = report,
-                alertActive = alertActive,
-                compact = false,
-                dense = dense,
-                framed = true,
-                modifier = Modifier.fillMaxSize(),
-            )
+            if (viewMode == DemoViewMode.Telemetry) {
+                WeatherMainDeck(
+                    report = report,
+                    alertActive = alertActive,
+                    alertsList = alertsList,
+                    selectedSector = selectedSector,
+                    onToggleViewMode = { onViewModeChange(DemoViewMode.Alerts) },
+                    simulatedAlert = simulatedAlert,
+                    onClearSimulatedAlert = onClearSimulatedAlert,
+                    compact = false,
+                    dense = dense,
+                    framed = true,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                WeatherAlertsDeck(
+                    alertsList = alertsList,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = onSelectAlert,
+                    selectedSector = selectedSector,
+                    onSelectSector = onSelectSector,
+                    resolvedProvince = resolvedProvince,
+                    isNmcLoading = isNmcLoading,
+                    alertActive = alertActive,
+                    compact = false,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
@@ -234,6 +391,19 @@ private fun WeatherCompactLandscape(
     report: WeatherReport,
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onViewModeChange: (DemoViewMode) -> Unit,
+    hasSectorAlert: Boolean,
+    onGenerateAlert: () -> Unit,
+    alertsList: List<NmcAlert>,
+    selectedAlert: NmcAlert?,
+    onSelectAlert: (NmcAlert) -> Unit,
+    selectedSector: String,
+    onSelectSector: (String) -> Unit,
+    resolvedProvince: String?,
+    isNmcLoading: Boolean,
+    simulatedAlert: NmcAlert?,
+    onClearSimulatedAlert: () -> Unit,
     modifier: Modifier = Modifier,
     style: LcarsStyle = LcarsStyle.LowerDecksPadd,
     onToggleStyle: (() -> Unit)? = null,
@@ -241,18 +411,42 @@ private fun WeatherCompactLandscape(
     WeatherPaddLandscapeFrame(
         alertActive = alertActive,
         onToggleAlert = onToggleAlert,
+        viewMode = viewMode,
+        onViewModeChange = onViewModeChange,
+        hasSectorAlert = hasSectorAlert,
+        onGenerateAlert = onGenerateAlert,
         compact = true,
         modifier = modifier,
         style = style,
         onToggleStyle = onToggleStyle,
     ) {
-        WeatherMainDeck(
-            report = report,
-            alertActive = alertActive,
-            compact = true,
-            framed = true,
-            modifier = Modifier.fillMaxSize(),
-        )
+        if (viewMode == DemoViewMode.Telemetry) {
+            WeatherMainDeck(
+                report = report,
+                alertActive = alertActive,
+                alertsList = alertsList,
+                selectedSector = selectedSector,
+                onToggleViewMode = { onViewModeChange(DemoViewMode.Alerts) },
+                simulatedAlert = simulatedAlert,
+                onClearSimulatedAlert = onClearSimulatedAlert,
+                compact = true,
+                framed = true,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            WeatherAlertsDeck(
+                alertsList = alertsList,
+                selectedAlert = selectedAlert,
+                onSelectAlert = onSelectAlert,
+                selectedSector = selectedSector,
+                onSelectSector = onSelectSector,
+                resolvedProvince = resolvedProvince,
+                isNmcLoading = isNmcLoading,
+                alertActive = alertActive,
+                compact = true,
+                modifier = Modifier.fillMaxSize(),
+                )
+        }
     }
 }
 
@@ -260,6 +454,10 @@ private fun WeatherCompactLandscape(
 private fun WeatherPaddLandscapeFrame(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onViewModeChange: (DemoViewMode) -> Unit,
+    hasSectorAlert: Boolean,
+    onGenerateAlert: () -> Unit,
     compact: Boolean,
     dense: Boolean = compact,
     modifier: Modifier = Modifier,
@@ -283,6 +481,10 @@ private fun WeatherPaddLandscapeFrame(
         WeatherLeftFrame(
             alertActive = alertActive,
             onToggleAlert = onToggleAlert,
+            viewMode = viewMode,
+            onViewModeChange = onViewModeChange,
+            hasSectorAlert = hasSectorAlert,
+            onGenerateAlert = onGenerateAlert,
             compact = compactFrame,
             modifier = Modifier
                 .width(leftWidth)
@@ -329,6 +531,10 @@ private fun WeatherPaddLandscapeFrame(
 private fun WeatherLeftFrame(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onViewModeChange: (DemoViewMode) -> Unit,
+    hasSectorAlert: Boolean,
+    onGenerateAlert: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
     style: LcarsStyle = LcarsStyle.LowerDecksPadd,
@@ -354,7 +560,7 @@ private fun WeatherLeftFrame(
             onDrawBehind {
                 drawPath(
                     path = body,
-                    color = colors.weatherFrame
+                    color = if (alertActive) colors.alertRed else colors.weatherFrame
                 )
             }
         }
@@ -372,29 +578,42 @@ private fun WeatherLeftFrame(
                 onClick = onToggleStyle,
             )
             WeatherFramePanel(
-                text = "04-041969",
-                color = colors.weatherBtnSecondary,
-                height = if (compact) 48.dp else 68.dp
+                text = "telemetry",
+                color = if (viewMode == DemoViewMode.Telemetry) colors.weatherActiveAccent else colors.weatherBtnSecondary,
+                height = if (compact) 48.dp else 68.dp,
+                onClick = { onViewModeChange(DemoViewMode.Telemetry) }
             )
             WeatherFramePanel(
-                text = "05-1701D",
-                color = colors.a7,
-                height = if (compact) 54.dp else 88.dp
+                text = "nmc alerts",
+                color = if (viewMode == DemoViewMode.Alerts) {
+                    colors.weatherActiveAccent
+                } else if (hasSectorAlert) {
+                    colors.alertRed
+                } else {
+                    colors.a7
+                },
+                height = if (compact) 54.dp else 88.dp,
+                onClick = { onViewModeChange(DemoViewMode.Alerts) }
             )
             WeatherFramePanel(
-                text = "storm advisory",
+                text = "storm simulation",
                 color = if (alertActive) colors.alertRed else colors.weatherFrame,
                 height = if (compact) 46.dp else 64.dp,
                 onClick = onToggleAlert,
             )
-            WeatherFramePanel("forecast", colors.auxiliaryTan, if (compact) 42.dp else 58.dp)
+            WeatherFramePanel(
+                text = "rnd warning",
+                color = colors.auxiliaryTan,
+                height = if (compact) 42.dp else 58.dp,
+                onClick = onGenerateAlert
+            )
 
             // Fluid vertical frame segment (corresponding to classic .panel-9)
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(colors.weatherFrame)
+                    .background(if (alertActive) colors.alertRed else colors.weatherFrame)
             )
 
             WeatherFramePanel(
@@ -440,41 +659,17 @@ private fun WeatherBarPanel(
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
 
-    Row(
+    LcarsSegmentedBar(
+        segments = listOf(
+            LcarsBarSegment(weight = 0.10f, color = colors.weatherFrame),
+            LcarsBarSegment(weight = 0.28f, color = colors.weatherActiveAccent),
+            LcarsBarSegment(weight = 0.07f, color = colors.weatherBtnStyle),
+            LcarsBarSegment(weight = 0.50f, color = colors.weatherBtnStyle),
+            LcarsBarSegment(weight = if (compact) 0.08f else 0.05f, color = colors.weatherInactiveAccent),
+        ),
+        gap = gap,
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(gap),
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(0.10f)
-                .fillMaxHeight()
-                .background(colors.weatherFrame),
-        )
-        Box(
-            modifier = Modifier
-                .weight(0.28f)
-                .fillMaxHeight()
-                .background(colors.weatherActiveAccent),
-        )
-        Box(
-            modifier = Modifier
-                .weight(0.07f)
-                .fillMaxHeight()
-                .background(colors.weatherBtnStyle),
-        )
-        Box(
-            modifier = Modifier
-                .weight(0.50f)
-                .fillMaxHeight()
-                .background(colors.weatherBtnStyle),
-        )
-        Box(
-            modifier = Modifier
-                .weight(if (compact) 0.08f else 0.05f)
-                .fillMaxHeight()
-                .background(colors.weatherInactiveAccent),
-        )
-    }
+    )
 }
 
 @Composable
@@ -521,6 +716,17 @@ private fun WeatherPortrait(
     report: WeatherReport,
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onToggleViewMode: () -> Unit,
+    alertsList: List<NmcAlert>,
+    selectedAlert: NmcAlert?,
+    onSelectAlert: (NmcAlert) -> Unit,
+    selectedSector: String,
+    onSelectSector: (String) -> Unit,
+    resolvedProvince: String?,
+    isNmcLoading: Boolean,
+    simulatedAlert: NmcAlert?,
+    onClearSimulatedAlert: () -> Unit,
     modifier: Modifier = Modifier,
     style: LcarsStyle = LcarsStyle.LowerDecksPadd,
     onToggleStyle: (() -> Unit)? = null,
@@ -543,7 +749,7 @@ private fun WeatherPortrait(
         ) {
             LcarsElbow(
                 text = if (style == LcarsStyle.ClassicUltra) "classic" else "decks",
-                color = colors.weatherFrame,
+                color = if (alertActive) colors.alertRed else colors.weatherFrame,
                 direction = LcarsElbowDirection.TopLeft,
                 wingWidth = 106.dp,
                 wingHeight = 62.dp,
@@ -554,7 +760,7 @@ private fun WeatherPortrait(
                 color = colors.weatherActiveAccent,
                 height = 34.dp,
                 endCap = true,
-                label = "atmospheric conditions",
+                label = if (viewMode == DemoViewMode.Telemetry) "atmospheric conditions" else "tactical warning matrix",
                 labelAlign = LcarsLabelAlign.End,
                 modifier = Modifier
                     .weight(1f)
@@ -564,30 +770,56 @@ private fun WeatherPortrait(
         WeatherButtonRow(
             alertActive = alertActive,
             onToggleAlert = onToggleAlert,
+            viewMode = viewMode,
+            onToggleViewMode = onToggleViewMode,
             style = style,
             onToggleStyle = onToggleStyle,
         )
-        AlertStrip(report = report, alertActive = alertActive)
-        CurrentConditionsPanel(report = report, alertActive = alertActive, compact = true)
-        ForecastPanel(report = report, compact = true)
-        StationPanel(report = report, alertActive = alertActive, compact = true)
-        LcarsFramePanel(
-            title = "sensor cascade",
-            footerLabel = if (style == LcarsStyle.ClassicUltra) "classic ultra 24.2" else "lower decks padd 24.2"
-        ) {
-            LcarsNumberMatrix(
-                rows = 5,
-                columns = 7,
-                seed = if (alertActive) 44307 else 57436,
-                highlightedRow = if (alertActive) 1 else 3,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(116.dp),
+        if (viewMode == DemoViewMode.Telemetry) {
+            AlertStrip(
+                report = report,
+                alertActive = alertActive,
+                alertsList = alertsList,
+                selectedSector = selectedSector,
+                simulatedAlert = simulatedAlert,
+                onClick = {
+                    if (simulatedAlert != null) onClearSimulatedAlert() else onToggleViewMode()
+                }
             )
-            LcarsLogConsole(
-                entries = weatherLogEntries(report, alertActive),
-                maxLines = 4,
-                autoScroll = false,
+            CurrentConditionsPanel(report = report, alertActive = alertActive, compact = true)
+            ForecastPanel(report = report, compact = true)
+            StationPanel(report = report, alertActive = alertActive, compact = true)
+            LcarsFramePanel(
+                title = "sensor cascade",
+                footerLabel = if (style == LcarsStyle.ClassicUltra) "classic ultra 24.2" else "lower decks padd 24.2"
+            ) {
+                LcarsNumberMatrix(
+                    rows = 5,
+                    columns = 7,
+                    seed = if (alertActive) 44307 else 57436,
+                    highlightedRow = if (alertActive) 1 else 3,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(116.dp),
+                )
+                LcarsLogConsole(
+                    entries = weatherLogEntries(report, alertActive, alertsList, selectedSector, simulatedAlert),
+                    maxLines = 4,
+                    autoScroll = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            WeatherAlertsDeck(
+                alertsList = alertsList,
+                selectedAlert = selectedAlert,
+                onSelectAlert = onSelectAlert,
+                selectedSector = selectedSector,
+                onSelectSector = onSelectSector,
+                resolvedProvince = resolvedProvince,
+                isNmcLoading = isNmcLoading,
+                alertActive = alertActive,
+                compact = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -598,6 +830,11 @@ private fun WeatherPortrait(
 private fun WeatherMainDeck(
     report: WeatherReport,
     alertActive: Boolean,
+    alertsList: List<NmcAlert>,
+    selectedSector: String,
+    onToggleViewMode: () -> Unit,
+    simulatedAlert: NmcAlert?,
+    onClearSimulatedAlert: () -> Unit,
     compact: Boolean,
     dense: Boolean = compact,
     framed: Boolean = false,
@@ -629,7 +866,16 @@ private fun WeatherMainDeck(
                 bottomHeight = if (compact) 10.dp else 16.dp,
             )
         }
-        AlertStrip(report = report, alertActive = alertActive)
+        AlertStrip(
+            report = report,
+            alertActive = alertActive,
+            alertsList = alertsList,
+            selectedSector = selectedSector,
+            simulatedAlert = simulatedAlert,
+            onClick = {
+                if (simulatedAlert != null) onClearSimulatedAlert() else onToggleViewMode()
+            }
+        )
         if (compact) {
             Row(
                 modifier = Modifier
@@ -659,7 +905,7 @@ private fun WeatherMainDeck(
                         modifier = Modifier.weight(1f)
                     )
                     LcarsLogConsole(
-                        entries = weatherLogEntries(report, alertActive),
+                        entries = weatherLogEntries(report, alertActive, alertsList, selectedSector, simulatedAlert),
                         maxLines = 3,
                         autoScroll = false,
                         modifier = Modifier.fillMaxWidth(),
@@ -688,7 +934,7 @@ private fun WeatherMainDeck(
                         modifier = Modifier.weight(1f),
                     )
                     LcarsLogConsole(
-                        entries = weatherLogEntries(report, alertActive),
+                        entries = weatherLogEntries(report, alertActive, alertsList, selectedSector, simulatedAlert),
                         maxLines = if (dense) 3 else 4,
                         autoScroll = false,
                         modifier = Modifier.fillMaxWidth(),
@@ -853,6 +1099,8 @@ private fun WeatherCommandRail(
 private fun WeatherButtonRow(
     alertActive: Boolean,
     onToggleAlert: () -> Unit,
+    viewMode: DemoViewMode,
+    onToggleViewMode: () -> Unit,
     style: LcarsStyle = LcarsStyle.LowerDecksPadd,
     onToggleStyle: (() -> Unit)? = null,
 ) {
@@ -875,7 +1123,7 @@ private fun WeatherButtonRow(
             onClick = { onToggleStyle?.invoke() },
         )
         LcarsButton(
-            text = if (alertActive) "clear advisory" else "storm advisory",
+            text = if (alertActive) "clear advisory" else "storm simulation",
             color = colors.violet,
             shape = LcarsButtonShape.Rectangle,
             alerting = alertActive,
@@ -885,31 +1133,78 @@ private fun WeatherButtonRow(
             onClick = onToggleAlert,
         )
         LcarsButton(
-            text = "radar",
+            text = if (viewMode == DemoViewMode.Telemetry) "nmc alerts" else "telemetry",
             color = colors.auxiliaryTan,
             shape = LcarsButtonShape.BlockEnd,
             minWidth = 0.dp,
             minHeight = 0.dp,
             modifier = Modifier.weight(1f),
-            onClick = {},
+            onClick = onToggleViewMode,
         )
     }
 }
 
 @Composable
-private fun AlertStrip(report: WeatherReport, alertActive: Boolean) {
+private fun AlertStrip(
+    report: WeatherReport,
+    alertActive: Boolean,
+    alertsList: List<NmcAlert> = emptyList(),
+    selectedSector: String = "ALL SECTORS",
+    simulatedAlert: NmcAlert? = null,
+    onClick: (() -> Unit)? = null
+) {
+    val sectorAlerts = remember(alertsList, selectedSector) {
+        if (selectedSector == "ALL SECTORS") {
+            alertsList
+        } else {
+            alertsList.filter { it.grid == selectedSector }
+        }
+    }
+
     val message = when {
-        alertActive -> "storm advisory active / pressure drop detected"
+        simulatedAlert != null -> "simulated warning: ${simulatedAlert.title} / tap to clear warning"
+        sectorAlerts.isNotEmpty() -> {
+            val highest = sectorAlerts.maxByOrNull {
+                when (it.level) {
+                    NmcAlertLevel.Red -> 4
+                    NmcAlertLevel.Orange -> 3
+                    NmcAlertLevel.Yellow -> 2
+                    NmcAlertLevel.Blue -> 1
+                    else -> 0
+                }
+            }
+            "nmc warning active: ${highest?.title} / tap for tactical details"
+        }
+        alertActive -> "storm simulation active / pressure drop simulated"
         !report.live && report.sourceStatus == WeatherSourceStatus.Cached -> "local cache active / sync pending"
         !report.live -> "weather uplink pending / local cache displayed"
         report.advisorySuggested -> "live weather advisory suggested / review conditions"
         else -> "surface weather nominal / live uplink active"
     }
 
+    val hasWarning = alertActive || report.advisorySuggested || sectorAlerts.isNotEmpty() || simulatedAlert != null
+    val alertLevel = when {
+        simulatedAlert != null -> {
+            when (simulatedAlert.level) {
+                NmcAlertLevel.Red -> com.lcars.ui.LcarsAlertLevel.Critical
+                NmcAlertLevel.Orange, NmcAlertLevel.Yellow -> com.lcars.ui.LcarsAlertLevel.Warning
+                NmcAlertLevel.Blue -> com.lcars.ui.LcarsAlertLevel.Advisory
+                else -> com.lcars.ui.LcarsAlertLevel.Normal
+            }
+        }
+        sectorAlerts.any { it.level == NmcAlertLevel.Red } -> com.lcars.ui.LcarsAlertLevel.Critical
+        sectorAlerts.any { it.level == NmcAlertLevel.Orange || it.level == NmcAlertLevel.Yellow } -> com.lcars.ui.LcarsAlertLevel.Warning
+        sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> com.lcars.ui.LcarsAlertLevel.Advisory
+        alertActive -> com.lcars.ui.LcarsAlertLevel.Warning
+        report.advisorySuggested -> com.lcars.ui.LcarsAlertLevel.Advisory
+        else -> com.lcars.ui.LcarsAlertLevel.Normal
+    }
+
     LcarsAlertBanner(
-        message = message,
-        active = alertActive || report.advisorySuggested,
-        level = if (alertActive || report.advisorySuggested) com.lcars.ui.LcarsAlertLevel.Warning else com.lcars.ui.LcarsAlertLevel.Normal,
+        message = message.uppercase(),
+        active = hasWarning,
+        level = alertLevel,
+        modifier = if (onClick != null && (sectorAlerts.isNotEmpty() || simulatedAlert != null)) Modifier.clickable(onClick = onClick) else Modifier,
     )
 }
 
@@ -1256,9 +1551,12 @@ private fun StationPanel(
             )
         }
         if (compressed) {
-            StationVectorsInlinePanel(
+            LcarsTelemetryPanel(
+                title = "station vectors",
                 entries = stationVectorEntries(report = report, relayLabel = relayLabel),
                 alerting = alertActive,
+                compact = true,
+                layout = LcarsTelemetryLayout.Inline,
             )
         } else {
             LcarsTelemetryPanel(
@@ -1284,74 +1582,6 @@ private fun stationVectorEntries(
         if (report.live) LcarsTelemetryStatus.Normal else LcarsTelemetryStatus.Warning,
     ),
 )
-
-@Composable
-private fun StationVectorsInlinePanel(
-    entries: List<LcarsTelemetryEntry>,
-    alerting: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val colors = LocalLcarsColors.current
-    val spacing = LocalLcarsSpacing.current
-    val typography = LocalLcarsTypography.current
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.panel)
-            .padding(spacing.gapStandard),
-        verticalArrangement = Arrangement.spacedBy(spacing.gapStandard / 2f),
-    ) {
-        WeatherLabel(
-            text = "station vectors",
-            style = typography.labelSmall.copy(
-                color = colors.auxiliaryTan,
-                fontSize = 13.sp,
-                lineHeight = 14.sp,
-            ),
-            maxLines = 1,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard / 2f),
-        ) {
-            entries.forEach { entry ->
-                val valueColor = when {
-                    alerting -> colors.alertRed
-                    entry.status == LcarsTelemetryStatus.Warning -> colors.monoAmber
-                    entry.status == LcarsTelemetryStatus.Normal -> colors.tacticalGreen
-                    else -> colors.lightBlue
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color.Black)
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    WeatherLabel(
-                        text = entry.label,
-                        style = typography.labelSmall.copy(
-                            color = colors.a3,
-                            fontSize = 10.sp,
-                            lineHeight = 11.sp,
-                        ),
-                        maxLines = 1,
-                    )
-                    WeatherLabel(
-                        text = entry.value,
-                        style = typography.telemetry.copy(
-                            color = valueColor,
-                            fontSize = 12.sp,
-                            lineHeight = 13.sp,
-                        ),
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun WeatherConditionGraphic(
@@ -1732,13 +1962,46 @@ private fun weatherTelemetry(report: WeatherReport, alertActive: Boolean): List<
     ),
 )
 
-private fun weatherLogEntries(report: WeatherReport, alertActive: Boolean): List<LcarsLogEntry> = buildList {
+private fun weatherLogEntries(
+    report: WeatherReport,
+    alertActive: Boolean,
+    alertsList: List<NmcAlert> = emptyList(),
+    selectedSector: String = "ALL SECTORS",
+    simulatedAlert: NmcAlert? = null
+): List<LcarsLogEntry> = buildList {
     when (report.sourceStatus) {
         WeatherSourceStatus.Live -> add(LcarsLogEntry("open-meteo uplink established", LcarsLogSeverity.Success, "wx"))
         WeatherSourceStatus.Loading -> add(LcarsLogEntry("weather uplink acquisition pending", LcarsLogSeverity.Info, "wx"))
         WeatherSourceStatus.Cached -> add(LcarsLogEntry("local cache loaded; sync in progress", LcarsLogSeverity.Info, "wx"))
         WeatherSourceStatus.Offline -> add(LcarsLogEntry("weather uplink offline; local cache active", LcarsLogSeverity.Alert, "wx"))
     }
+
+    // Add NMC warnings to telemetry logs
+    val sectorAlerts = if (selectedSector == "ALL SECTORS") {
+        alertsList
+    } else {
+        alertsList.filter { it.grid == selectedSector }
+    }
+    sectorAlerts.forEach { warning ->
+        val severity = when (warning.level) {
+            NmcAlertLevel.Red -> LcarsLogSeverity.Alert
+            NmcAlertLevel.Orange, NmcAlertLevel.Yellow -> LcarsLogSeverity.Alert
+            NmcAlertLevel.Blue -> LcarsLogSeverity.Info
+            else -> LcarsLogSeverity.Info
+        }
+        add(LcarsLogEntry("nmc warning active: ${warning.title}", severity, "nmc"))
+    }
+
+    if (simulatedAlert != null) {
+        val severity = when (simulatedAlert.level) {
+            NmcAlertLevel.Red -> LcarsLogSeverity.Alert
+            NmcAlertLevel.Orange, NmcAlertLevel.Yellow -> LcarsLogSeverity.Alert
+            NmcAlertLevel.Blue -> LcarsLogSeverity.Info
+            else -> LcarsLogSeverity.Info
+        }
+        add(LcarsLogEntry("simulated warning active: ${simulatedAlert.title}", severity, "sim"))
+    }
+
     add(LcarsLogEntry("${report.locationLabel} loaded", LcarsLogSeverity.Info, "loc"))
     add(LcarsLogEntry("sky classified: ${report.condition}", LcarsLogSeverity.Info, "sky"))
     if (alertActive) {
@@ -1749,6 +2012,434 @@ private fun weatherLogEntries(report: WeatherReport, alertActive: Boolean): List
         add(LcarsLogEntry("pressure trend inside nominal corridor", LcarsLogSeverity.Success, "met"))
     }
     add(LcarsLogEntry("forecast model ${report.updatedLabel}", if (report.live) LcarsLogSeverity.Success else LcarsLogSeverity.Info, "fct"))
+}
+
+enum class DemoViewMode {
+    Telemetry,
+    Alerts
+}
+
+private fun generateRandomAlert(): NmcAlert {
+    val levels = listOf(NmcAlertLevel.Red, NmcAlertLevel.Orange, NmcAlertLevel.Yellow, NmcAlertLevel.Blue)
+    val provinces = listOf("BEIJING", "SHANGHAI", "GUANGDONG", "HUBEI", "SICHUAN", "ZHEJIANG", "HAINAN")
+    val weatherTypes = listOf("THUNDERSTORM", "HEAVY RAIN", "GALE", "HEATWAVE", "DENSE FOG", "COLD WAVE", "TYPHOON", "HAIL")
+
+    val level = levels.random()
+    val province = provinces.random()
+    val type = weatherTypes.random()
+
+    val levelStr = when (level) {
+        NmcAlertLevel.Red -> "RED WARNING"
+        NmcAlertLevel.Orange -> "ORANGE WARNING"
+        NmcAlertLevel.Yellow -> "YELLOW WARNING"
+        NmcAlertLevel.Blue -> "BLUE WARNING"
+        else -> "YELLOW WARNING"
+    }
+
+    val id = "rnd-${(1000..9999).random()}"
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val timeStr = java.time.LocalDateTime.now().format(formatter)
+
+    return NmcAlert(
+        alertId = id,
+        issueTime = timeStr,
+        title = "$province: $type $levelStr",
+        detailUrl = "http://www.nmc.cn/alarm/$id",
+        level = level,
+        grid = province
+    )
+}
+
+private fun convertToStardate(issueTime: String): String {
+    return try {
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val ldt = java.time.LocalDateTime.parse(issueTime, formatter)
+        val year = ldt.year
+        val doy = ldt.dayOfYear
+        val hour = ldt.hour
+        val minute = ldt.minute
+        val stardate = 1000 * (year - 2000) + (doy * 2.73) + (hour * 0.11) + (minute * 0.002)
+        String.format(java.util.Locale.US, "%.1f", stardate)
+    } catch (e: Exception) {
+        "83726.4"
+    }
+}
+
+private fun getAlertClassification(level: NmcAlertLevel): String {
+    return when (level) {
+        NmcAlertLevel.Red -> "RED ALERT / CLASS 5 ATMOSPHERIC TORNADO"
+        NmcAlertLevel.Orange -> "ORANGE ALERT / THERMAL ANOMALY WARNING"
+        NmcAlertLevel.Yellow -> "YELLOW ALERT / CLASSIFIED IONIZED ADVISORY"
+        NmcAlertLevel.Blue -> "CONDITION BLUE / MINOR MOISTURE DISPLACEMENT"
+        NmcAlertLevel.Unknown -> "UNSPECIFIED SENSOR DEVIATION"
+    }
+}
+
+private fun getAlertDirective(level: NmcAlertLevel): String {
+    return when (level) {
+        NmcAlertLevel.Red -> "RAISE DEFLECTOR SHIELDS TO MAXIMUM. SHUT DOWN EXTERNAL RAMSCOOPS. EVACUATE LOWER SENSOR DOMES. PREPARE SHIP FOR SEVERE SHEAR."
+        NmcAlertLevel.Orange -> "RE-ROUTE PRIMARY POWER TO DEFLECTOR SENSORS. DEPLOY ATMOSPHERIC STABILIZERS. LOCK DOWN SHUTTLECRAFT HANGAR DOORS."
+        NmcAlertLevel.Yellow -> "HEIGHTEN INCOMING SCANNER SENSITIVITY. MONITOR WARP CORE COUPLINGS FOR THERMAL SPECS. CAUTION IN ATMOSPHERIC FLIGHT."
+        NmcAlertLevel.Blue -> "PERFORM ROUTINE CALIBRATIONS. SECURE EXPOSED DECK SECTIONS. RESUME STANDARD SCAN CRUISE."
+        NmcAlertLevel.Unknown -> "EXECUTE FULL DIAGNOSTIC SCAN ON INCOMING SENSOR GRIDS."
+    }
+}
+
+private fun getAlertLevelColor(level: NmcAlertLevel, colors: com.lcars.ui.LcarsColors): Color {
+    return when (level) {
+        NmcAlertLevel.Red -> colors.alertRed
+        NmcAlertLevel.Orange -> Color(0xFFFF8800)
+        NmcAlertLevel.Yellow -> colors.monoAmber
+        NmcAlertLevel.Blue -> colors.lightBlue
+        NmcAlertLevel.Unknown -> colors.auxiliaryTan
+    }
+}
+
+@Composable
+private fun WeatherAlertsList(
+    alerts: List<NmcAlert>,
+    selectedAlert: NmcAlert?,
+    onSelectAlert: (NmcAlert) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+    val scroll = rememberScrollState()
+
+    Column(
+        modifier = modifier.verticalScroll(scroll),
+        verticalArrangement = Arrangement.spacedBy(spacing.gapStandard)
+    ) {
+        if (alerts.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(Color(0xFF070707)),
+                contentAlignment = Alignment.Center
+            ) {
+                LcarsText(
+                    text = "NO WARNING FLUX DETECTED IN THIS GRID",
+                    style = LocalLcarsTypography.current.telemetry.copy(color = colors.tacticalGreen)
+                )
+            }
+        } else {
+            alerts.forEach { alert ->
+                val isSelected = selectedAlert?.alertId == alert.alertId
+                val itemColor = getAlertLevelColor(alert.level, colors)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isSelected) Color(0xFF151825) else Color(0xFF0A0C14))
+                        .clickable { onSelectAlert(alert) }
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(8.dp)
+                            .fillMaxHeight()
+                            .padding(vertical = 8.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(itemColor)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        LcarsText(
+                            text = alert.title,
+                            style = LocalLcarsTypography.current.telemetry.copy(
+                                color = if (isSelected) colors.weatherActiveAccent else colors.text,
+                                fontSize = 14.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            LcarsText(
+                                text = "LVL: ${alert.level.name.uppercase()}",
+                                style = LocalLcarsTypography.current.labelSmall.copy(color = itemColor)
+                            )
+                            LcarsText(
+                                text = alert.issueTime.substringAfter(" "),
+                                style = LocalLcarsTypography.current.labelSmall.copy(color = colors.auxiliaryTan)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherAlertDetails(
+    alert: NmcAlert?,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+    val typography = LocalLcarsTypography.current
+
+    if (alert == null) {
+        LcarsInspectBracket(
+            color = colors.weatherBtnInactive,
+            markerColor = colors.lightBlue,
+            running = true,
+            showSideRails = true,
+            modifier = modifier,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    LcarsText(
+                        text = "SELECT WARNING FOR DETAILED SPECIFICATIONS",
+                        style = typography.button.copy(color = colors.auxiliaryTan)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LcarsText(
+                        text = "GRID SENSORS ACTIVE // LOG MONITOR RECORDED",
+                        style = typography.labelSmall.copy(color = colors.weatherBtnInactive)
+                    )
+                }
+            }
+        }
+    } else {
+        val alertColor = getAlertLevelColor(alert.level, colors)
+        val classification = getAlertClassification(alert.level)
+        val directive = getAlertDirective(alert.level)
+        val stardate = convertToStardate(alert.issueTime)
+
+        LcarsInspectBracket(
+            color = alertColor,
+            markerColor = colors.a7,
+            running = true,
+            showSideRails = true,
+            modifier = modifier,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .padding(spacing.panelPadding)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LcarsText(
+                        text = classification,
+                        style = typography.header.copy(color = alertColor, fontSize = 18.sp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(alertColor)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        LcarsText(
+                            text = "STATUS: ${alert.level.name.uppercase()}",
+                            style = typography.labelSmall.copy(color = Color.Black)
+                        )
+                    }
+                }
+
+                LcarsBar(color = alertColor, height = 4.dp)
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row {
+                        LcarsText(text = "STARDATE:  ", style = typography.telemetry.copy(color = colors.auxiliaryTan))
+                        LcarsText(text = stardate, style = typography.telemetry.copy(color = Color.White))
+                    }
+                    Row {
+                        LcarsText(text = "ORIGIN:    ", style = typography.telemetry.copy(color = colors.auxiliaryTan))
+                        LcarsText(text = "NATIONAL METEOROLOGICAL CENTER (NMC)", style = typography.telemetry.copy(color = colors.lightBlue))
+                    }
+                    Row {
+                        LcarsText(text = "TIMESTAMP: ", style = typography.telemetry.copy(color = colors.auxiliaryTan))
+                        LcarsText(text = alert.issueTime, style = typography.telemetry.copy(color = Color.White))
+                    }
+                }
+
+                LcarsFramePanel(
+                    title = "NMC TRANSMISSION LOG",
+                    footerLabel = "GRID SECTOR SECURE",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF0A0C14))
+                            .padding(8.dp)
+                    ) {
+                        LcarsText(
+                            text = alert.title,
+                            style = typography.telemetry.copy(
+                                color = colors.text,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp
+                            )
+                        )
+                    }
+                }
+
+                LcarsFramePanel(
+                    title = "TACTICAL DIRECTIVES",
+                    footerLabel = "ACTION REQUIRED",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF150A0A))
+                            .padding(8.dp)
+                    ) {
+                        LcarsText(
+                            text = directive,
+                            style = typography.telemetry.copy(
+                                color = colors.alertRed,
+                                fontSize = 14.sp,
+                                lineHeight = 18.sp
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherAlertsDeck(
+    alertsList: List<NmcAlert>,
+    selectedAlert: NmcAlert?,
+    onSelectAlert: (NmcAlert) -> Unit,
+    selectedSector: String,
+    onSelectSector: (String) -> Unit,
+    resolvedProvince: String?,
+    isNmcLoading: Boolean,
+    alertActive: Boolean,
+    compact: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalLcarsColors.current
+    val spacing = LocalLcarsSpacing.current
+    val sectors = listOf("ALL SECTORS", "BEIJING", "SHANGHAI", "GUANGDONG", "HUBEI", "SICHUAN", "ZHEJIANG", "HAINAN")
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(spacing.gapStandard)
+    ) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(sectors.size) { index ->
+                val sector = sectors[index]
+                val isSelected = selectedSector == sector
+                val matchesLocation = resolvedProvince == sector
+                
+                LcarsButton(
+                    text = when (sector) {
+                        "ALL SECTORS" -> "all sectors"
+                        else -> "${sector.lowercase()} sector" + (if (matchesLocation) " (loc)" else "")
+                    },
+                    color = if (isSelected) colors.weatherActiveAccent else colors.weatherBtnInactive,
+                    shape = LcarsButtonShape.Pill,
+                    minWidth = 90.dp,
+                    minHeight = 32.dp,
+                    onClick = { onSelectSector(sector) }
+                )
+            }
+        }
+
+        val sectorAlerts = remember(alertsList, selectedSector) {
+            if (selectedSector == "ALL SECTORS") {
+                alertsList
+            } else {
+                alertsList.filter { it.grid == selectedSector }
+            }
+        }
+        val alertLevel = when {
+            sectorAlerts.any { it.level == NmcAlertLevel.Red } -> com.lcars.ui.LcarsAlertLevel.Critical
+            sectorAlerts.any { it.level == NmcAlertLevel.Orange } -> com.lcars.ui.LcarsAlertLevel.Warning
+            sectorAlerts.any { it.level == NmcAlertLevel.Yellow } -> com.lcars.ui.LcarsAlertLevel.Warning
+            sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> com.lcars.ui.LcarsAlertLevel.Advisory
+            else -> com.lcars.ui.LcarsAlertLevel.Normal
+        }
+        val message = when {
+            isNmcLoading -> "establishing downlink channel to nmc relay..."
+            sectorAlerts.isEmpty() -> "subspace warning logs: nominal grid conditions"
+            else -> "tactical warning log active / sector anomalies detected"
+        }
+
+        LcarsAlertBanner(
+            message = message,
+            active = alertActive,
+            level = alertLevel,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (compact) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 600.dp),
+                verticalArrangement = Arrangement.spacedBy(spacing.gapStandard)
+            ) {
+                WeatherAlertsList(
+                    alerts = sectorAlerts,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = onSelectAlert,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.4f)
+                )
+                WeatherAlertDetails(
+                    alert = selectedAlert,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.6f)
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(spacing.gapStandard)
+            ) {
+                WeatherAlertsList(
+                    alerts = sectorAlerts,
+                    selectedAlert = selectedAlert,
+                    onSelectAlert = onSelectAlert,
+                    modifier = Modifier
+                        .weight(0.38f)
+                        .fillMaxHeight()
+                )
+                WeatherAlertDetails(
+                    alert = selectedAlert,
+                    modifier = Modifier
+                        .weight(0.62f)
+                        .fillMaxHeight()
+                )
+            }
+        }
+    }
 }
 
 @Preview(widthDp = 1366, heightDp = 768, showBackground = true)

@@ -127,6 +127,65 @@ LcarsTheme(
 
 适用场景：组件 catalog 分区、数据面板、状态面板。
 
+## 复合 Pattern 组件
+
+这些组件处在 atom 和完整业务场景之间，用来沉淀 demo 中重复出现的 LCARS 组合结构。它们不绑定天气、NMEA 或其他业务数据。
+
+### `LcarsSegmentedBar`
+
+功能：按权重绘制紧凑的多段水平 LCARS 色块，可选段内标签。
+
+主要参数：
+
+- `segments`：`LcarsBarSegment` 列表，每段包含 `weight`、`color` 和可选 `label`。
+- `height`：条形高度。
+- `gap`：段间距。
+- `labelColor`：段内文字颜色。
+
+适用场景：控制台顶部框架条、状态色带、PADD 变体展示条。
+
+### `LcarsConsoleFrame`
+
+功能：抽象典型控制台结构：左侧命令/框架轨、顶部条、右侧内容区和 L 型转角连接。
+
+主要参数：
+
+- `leftRail`：左侧 slot。
+- `topBar`：顶部条 slot。
+- `content`：主内容 slot。
+- `compact`、`railWidth`、`topBarHeight`：尺寸覆盖。
+- `frameColor`：框架主色。
+
+适用场景：天气面板、飞船控制台、桌面横屏 dashboard 外壳。
+
+### `LcarsFramedCommandRail`
+
+功能：带顶部圆角框架底座的命令轨，适合替代 demo 中手写的左侧框架按钮组。
+
+主要参数：
+
+- `items`：`LcarsFramedRailItem` 列表。
+- `side`：圆角方向。
+- `topInset` / `topCornerRadius`：顶部弯角几何。
+- `header` / `footer`：可选 slot。
+- `onCommandClick`：命令点击回调。
+
+适用场景：主导航、模式切换、告警控制、带大型空白填充块的侧翼框架。
+
+### `LcarsOptionStrip`
+
+功能：可自定义内容的 LCARS 选项条，内置选中边框和底部标签轨。
+
+主要参数：
+
+- `items`：选项数据。
+- `selectedItem`：当前选中项，可为空。
+- `onSelect`：选择回调。
+- `label`：底部标签文本转换。
+- `itemContent`：每个选项块的自定义内容。
+
+适用场景：forecast day strip、PADD 变体切换、图标/缩略图选项组。
+
 ## 控制类组件
 
 ### `LcarsCommandRail`
@@ -201,6 +260,8 @@ LcarsTheme(
 - `entries`：`LcarsTelemetryEntry` 列表。
 - `alerting`：在告警态改变正常状态项的显示。
 - `singleColumnBelow`：低于指定宽度时切换单列。
+- `compact`：使用紧凑字体和内边距。
+- `layout`：`Grid`、`CompactGrid` 或 `Inline`。`Inline` 用于压缩横向读数条。
 
 适用场景：坐标、传感器状态、系统指标、设备状态。
 
