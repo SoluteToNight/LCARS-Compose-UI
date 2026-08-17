@@ -1,5 +1,7 @@
 package com.lcars.demo
 
+import com.lcars.ui.theme.LcarsTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
@@ -27,45 +30,43 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lcars.ui.LcarsPhonePaddScaffold
-import com.lcars.ui.LcarsPhonePaddTheme
-import com.lcars.ui.LcarsPaddControl
-import com.lcars.ui.LcarsPaddControlShape
-import com.lcars.ui.LcarsPaddDataLines
-import com.lcars.ui.LcarsPaddMessage
-import com.lcars.ui.LcarsPaddReadoutPanel
-import com.lcars.ui.LcarsPaddStatusStrip
-import com.lcars.ui.LcarsStyle
-import com.lcars.ui.LocalLcarsColors
-import com.lcars.ui.LocalLcarsPhonePaddMetrics
-import com.lcars.ui.LocalLcarsTypography
+import com.lcars.ui.padd.LcarsPhonePaddScaffold
+import com.lcars.ui.padd.LcarsPhonePaddTheme
+import com.lcars.ui.padd.LcarsPaddControl
+import com.lcars.ui.padd.LcarsPaddControlShape
+import com.lcars.ui.padd.LcarsPaddDataLines
+import com.lcars.ui.padd.LcarsPaddMessage
+import com.lcars.ui.padd.LcarsPaddReadoutPanel
+import com.lcars.ui.padd.LcarsPaddStatusStrip
+import com.lcars.ui.theme.LcarsPreset
+import com.lcars.ui.padd.LocalLcarsPhonePaddMetrics
 
 @Composable
 fun PaddVariantDemoScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedStyleName by rememberSaveable { mutableStateOf(LcarsStyle.StandardPadd.name) }
+    var selectedStyleName by rememberSaveable { mutableStateOf(LcarsPreset.NemesisBlueUltra.name) }
     var alert by rememberSaveable { mutableStateOf(false) }
-    val selectedStyle = LcarsStyle.valueOf(selectedStyleName)
+    val selectedStyle = LcarsPreset.valueOf(selectedStyleName)
 
-    LcarsPhonePaddTheme(style = selectedStyle) {
+    LcarsPhonePaddTheme(preset = selectedStyle) {
         LcarsPhonePaddScaffold(
             title = "systems data 21-0071",
             registry = "uss raven - database 83-s28",
             footerLabel = "standard padd variant",
-            modifier = modifier,
+            modifier = modifier.safeDrawingPadding(),
             footer = {
                 LcarsPaddControl(
                     text = "back",
-                    color = LocalLcarsColors.current.a7,
+                    color = LcarsTheme.colorScheme.a7,
                     shape = LcarsPaddControlShape.LeftCap,
                     modifier = Modifier.weight(0.32f),
                     onClick = onBack,
                 )
                 LcarsPaddControl(
                     text = if (alert) "clear" else "resist",
-                    color = if (alert) LocalLcarsColors.current.alertRed else LocalLcarsColors.current.a1,
+                    color = if (alert) LcarsTheme.colorScheme.alertRed else LcarsTheme.colorScheme.a1,
                     shape = LcarsPaddControlShape.RightCap,
                     modifier = Modifier.weight(0.68f),
                     onClick = { alert = !alert },
@@ -85,21 +86,21 @@ fun PaddVariantDemoScreen(
             ) {
                 LcarsPaddControl(
                     text = "log",
-                    color = LocalLcarsColors.current.a5,
+                    color = LcarsTheme.colorScheme.a5,
                     shape = LcarsPaddControlShape.LeftCap,
                     modifier = Modifier.weight(1f),
                     onClick = {},
                 )
                 LcarsPaddControl(
                     text = "chart",
-                    color = LocalLcarsColors.current.a2,
+                    color = LcarsTheme.colorScheme.a2,
                     shape = LcarsPaddControlShape.Rectangle,
                     modifier = Modifier.weight(1f),
                     onClick = {},
                 )
                 LcarsPaddControl(
                     text = "link",
-                    color = LocalLcarsColors.current.violet,
+                    color = LcarsTheme.colorScheme.violet,
                     shape = LcarsPaddControlShape.RightCap,
                     modifier = Modifier.weight(1f),
                     onClick = {},
@@ -148,17 +149,15 @@ fun PaddVariantDemoScreen(
 
 @Composable
 private fun PaddStyleSelector(
-    selectedStyle: LcarsStyle,
-    onStyleSelected: (LcarsStyle) -> Unit,
+    selectedStyle: LcarsPreset,
+    onStyleSelected: (LcarsPreset) -> Unit,
 ) {
-    val colors = LocalLcarsColors.current
+    val colors = LcarsTheme.colorScheme
     val gap = LocalLcarsPhonePaddMetrics.current.gap
     val styles = listOf(
-        LcarsStyle.StandardPadd,
-        LcarsStyle.ClassicUltra,
-        LcarsStyle.LowerDecks,
-        LcarsStyle.LowerDecksPadd,
-        LcarsStyle.NemesisBlueUltra,
+        LcarsPreset.ClassicUltra,
+        LcarsPreset.NemesisBlueUltra,
+        LcarsPreset.LowerDecksPadd,
     )
 
     Row(
@@ -214,8 +213,8 @@ private fun PaddPrimaryReadout(alert: Boolean) {
 
 @Composable
 private fun PaddCompactDiagram(modifier: Modifier = Modifier) {
-    val colors = LocalLcarsColors.current
-    val typography = LocalLcarsTypography.current
+    val colors = LcarsTheme.colorScheme
+    val typography = LcarsTheme.typography
     val gap = LocalLcarsPhonePaddMetrics.current.gap
     val scrollState = rememberScrollState()
 
@@ -282,7 +281,7 @@ private fun PaddStatusStack(
     alert: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalLcarsColors.current
+    val colors = LcarsTheme.colorScheme
     val gap = LocalLcarsPhonePaddMetrics.current.gap
 
     LcarsPaddReadoutPanel(
@@ -315,12 +314,10 @@ private fun PaddStatusStack(
     }
 }
 
-private fun LcarsStyle.paddDemoLabel(): String = when (this) {
-    LcarsStyle.StandardPadd -> "std"
-    LcarsStyle.ClassicUltra -> "classic"
-    LcarsStyle.LowerDecks -> "decks"
-    LcarsStyle.LowerDecksPadd -> "ld"
-    LcarsStyle.NemesisBlueUltra -> "nem"
+private fun LcarsPreset.paddDemoLabel(): String = when (this) {
+    LcarsPreset.ClassicUltra -> "classic"
+    LcarsPreset.LowerDecksPadd -> "ld"
+    LcarsPreset.NemesisBlueUltra -> "nem"
 }
 
 @Preview(widthDp = 390, heightDp = 820, showBackground = true)

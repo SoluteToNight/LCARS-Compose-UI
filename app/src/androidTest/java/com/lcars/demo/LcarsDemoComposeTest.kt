@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
-import com.lcars.ui.LcarsResponsiveScaffold
+import com.lcars.ui.layout.LcarsResponsiveScaffold
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -20,10 +22,38 @@ class LcarsDemoComposeTest {
     val composeRule = createComposeRule()
 
     @Test
+    fun demoHub_selectsThenRoutesAllDestinations() {
+        var catalogLaunches = 0
+        var weatherLaunches = 0
+        var paddLaunches = 0
+
+        composeRule.setContent {
+            DemoHubScreen(
+                onOpenCatalog = { catalogLaunches += 1 },
+                onOpenWeather = { weatherLaunches += 1 },
+                onOpenPadd = { paddLaunches += 1 },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        composeRule.onNodeWithText("LCARS COMPOSE UI").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Select weather console").performClick()
+        composeRule.onNodeWithText("OPEN WEATHER CONSOLE").assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Select padd variants").performClick()
+        composeRule.onNodeWithText("OPEN PADD VARIANTS").assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Select component catalog").performClick()
+        composeRule.onNodeWithText("OPEN COMPONENT CATALOG").assertIsDisplayed().performClick()
+
+        assertEquals(1, catalogLaunches)
+        assertEquals(1, weatherLaunches)
+        assertEquals(1, paddLaunches)
+    }
+
+    @Test
     fun advisoryButton_togglesWeatherAlert() {
         composeRule.setContent {
             DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
+                WeatherSystemDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -36,7 +66,7 @@ class LcarsDemoComposeTest {
     fun weatherDemo_showsCurrentConditionsAndForecast() {
         composeRule.setContent {
             DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
+                WeatherSystemDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -49,7 +79,7 @@ class LcarsDemoComposeTest {
     fun weatherDemo_usesLowerDecksPaletteTitle() {
         composeRule.setContent {
             DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
+                WeatherSystemDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -58,14 +88,11 @@ class LcarsDemoComposeTest {
     }
 
     @Test
-    fun demoShell_switchesToComponentShowcase() {
+    fun componentCatalog_showsStandardSections() {
         composeRule.setContent {
-            DemoLcarsTheme {
-                LcarsDemoScreen(modifier = Modifier.fillMaxSize())
-            }
+            ComponentShowcaseDemoScreen(modifier = Modifier.fillMaxSize())
         }
 
-        composeRule.onNodeWithText("COMPONENTS").performClick()
         composeRule.onNodeWithText("COMPONENT SHOWCASE").assertIsDisplayed()
         composeRule.onNodeWithText("CORE TOKENS + ATOMS").assertIsDisplayed()
         composeRule.onNodeWithText("PADD VARIANTS").performScrollTo().assertIsDisplayed()

@@ -1,5 +1,6 @@
 package com.lcars.ui
 
+import com.lcars.ui.foundation.lcarsLabel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -2,132 +2,67 @@
 
 [中文](README_zh.md)
 
-`lcars-ui` is a reusable LCARS Compose UI module. It provides theme primitives, geometric controls, dynamic readouts, data panels, and application layout scaffolds.
+`lcars-ui` is a Jetpack Compose LCARS component library. The v1 API keeps one Android AAR while separating theme, foundation, controls, displays, layouts, scenes, and PADD components into focused packages.
 
 ## Installation
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoluteToNight:LCARS-Compose-UI:<version>")
+    implementation(project(":lcars-ui"))
 }
 ```
 
-The artifact is published through JitPack as the release AAR of this module.
+## Package Map
 
-## Component Documentation
+| Package | Responsibility |
+| --- | --- |
+| `com.lcars.ui.theme` | Theme specs, three presets, semantic colors, dimensions, shapes, motion, sound |
+| `com.lcars.ui.foundation` | Public text and low-level text helpers |
+| `com.lcars.ui.controls` | Buttons, toggles, segmented controls, dialogs, command rails |
+| `com.lcars.ui.display` | Status, progress, telemetry, tables, logs, meters, dynamic readouts |
+| `com.lcars.ui.layout` | Bars, elbows, frames, responsive scaffolds, console layouts |
+| `com.lcars.ui.scene` | Star charts, transmission and other complete scene patterns |
+| `com.lcars.ui.padd` | Handheld PADD theme, scaffold, controls, and readouts |
 
-- 中文组件说明：[COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md)
-- English component guide: [COMPONENTS.en.md](COMPONENTS.en.md)
+Preview-only examples live in `com.lcars.ui.preview`; applications should not depend on that package.
 
 ## Theme
 
-Use `LcarsTheme` or `LcarsAdaptiveTheme` at the root of your Compose content. They provide `LocalLcarsColors`, `LocalLcarsTypography`, and `LocalLcarsSpacing`.
-
-The simplest way to apply a visual style is to pass `LcarsStyle`:
+Use one of the three reference-backed presets:
 
 ```kotlin
-LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
-    LcarsConsoleScaffold(
-        leftWingContent = { /* commands */ },
-        mainDeckContent = { /* readouts */ },
-    )
-}
-```
+import com.lcars.ui.theme.LcarsPreset
+import com.lcars.ui.theme.LcarsTheme
 
-Available styles:
-
-- `LcarsStyle.StandardPadd`
-- `LcarsStyle.ClassicUltra`
-- `LcarsStyle.LowerDecks`
-- `LcarsStyle.LowerDecksPadd`
-- `LcarsStyle.NemesisBlueUltra`
-
-Style tokens set the default color and spacing values for all LCARS components under the theme. You can still override them explicitly:
-
-```kotlin
-LcarsTheme(
-    style = LcarsStyle.LowerDecks,
-    colors = customColors,
-    spacing = customSpacing,
-) {
+LcarsTheme(spec = LcarsPreset.NemesisBlueUltra.spec) {
     AppContent()
 }
 ```
 
-The default font is Antonio, a narrow open-source display family distributed under the SIL Open Font License. Apps can inject another licensed LCARS-like font by passing a custom `LcarsTypography`.
+- `LcarsPreset.ClassicUltra`
+- `LcarsPreset.NemesisBlueUltra`
+- `LcarsPreset.LowerDecksPadd`
 
-## Core Components
-
-- `LcarsButton`: pill, start-rounded, end-rounded, and rectangle command controls.
-- `LcarsBar`: horizontal LCARS bar with optional caps and embedded label.
-- `LcarsElbow`: four-direction Canvas elbow geometry.
-- `LcarsFramePanel`: framed content section with LCARS title/footer bars.
-- `LcarsSegmentedBar`, `LcarsConsoleFrame`, `LcarsFramedCommandRail`, `LcarsOptionStrip`: middle-layer pattern components extracted from demos for building custom LCARS design systems.
-- `LcarsTelemetryPanel`: responsive telemetry readout grid.
-- `LcarsDataTable`: dense status table.
-
-## Phone PADD Variant
-
-The phone PADD variant is a compact handheld layout family inspired by the standard PADD references. It keeps clear LCARS traits while reducing decorative geometry density for portrait phones.
-
-- `LcarsPhonePaddTheme`: applies compact typography and spacing for phone PADD screens. It defaults to `LcarsStyle.StandardPadd`, but accepts any existing `LcarsStyle`.
-- `LcarsPhonePaddScaffold`: portrait phone shell with a compact header, optional side rail, content deck, footer controls, and status strip.
-- `LcarsPaddHeader`, `LcarsPaddSideRail`, `LcarsPaddStatusStrip`: PADD-specific structure primitives.
-- `LcarsPaddControl`, `LcarsPaddReadoutPanel`, `LcarsPaddDataLines`, `LcarsPaddMessage`: dense controls and readout surfaces for handheld PADD screens.
-
-Example:
-
-```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
-    LcarsPhonePaddScaffold(title = "systems data 21-0071") {
-        LcarsPaddReadoutPanel(title = "hansen family") {
-            LcarsPaddDataLines(listOf("archive link nominal", "message buffer ready"))
-        }
-    }
-}
-```
-
-## Dynamic Components
-
-- `LcarsAlertBanner`
-- `LcarsStatusLight`
-- `LcarsProgressBar`
-- `LcarsSegmentedMeter`
-- `LcarsScannerSweep`
-- `LcarsReadoutTicker`
-
-Alert effects use stepped keyframes rather than smooth fades.
-
-## Extended Components
-
-- `LcarsCommandRail`
-- `LcarsSegmentedControl`
-- `LcarsToggle`
-- `LcarsDialog`
-- `LcarsLogConsole`
-- `LcarsNumberMatrix`
-- `LcarsStarCoords`
-- `LcarsNumericLabel`
-- `LcarsDividerGrid`
-- `LcarsInspectBracket`
-- `LcarsTargetScanner`
-- `LcarsResponsiveScaffold`
-- `LcarsTransmissionFrame`
-- `LcarsStarChart`
-
-## Layout Scaffolds
-
-- `LcarsAppScaffold`: generic app shell with top bar, control rail, content deck, optional footer.
-- `LcarsPaddScaffold`: portrait-friendly PADD shell.
-- `LcarsPhonePaddScaffold`: phone portrait PADD shell with reduced decorative density.
-- `LcarsConsoleScaffold`: landscape console shell over `LcarsMainConsole`.
+Read semantic tokens with `LcarsTheme.colorScheme`, `LcarsTheme.typography`, `LcarsTheme.dimensions`, `LcarsTheme.shapes`, and `LcarsTheme.motionScheme`. Pass `LcarsMotionMode.Reduced` or `Off` when the host app needs stricter motion behavior. Sound is opt-in through `LcarsSoundPlayer`; the default player is silent.
 
 ## Example
 
 ```kotlin
+import com.lcars.ui.display.LcarsAlertBanner
+import com.lcars.ui.display.LcarsProgressBar
+import com.lcars.ui.layout.LcarsFramePanel
+
 LcarsFramePanel(title = "dynamic states") {
-    LcarsStatusLight(label = "sensor lock", active = true)
     LcarsProgressBar(progress = 0.64f, label = "reactor balance")
     LcarsAlertBanner(message = "critical alert active", active = true)
 }
 ```
+
+For handheld layouts, use `LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd)` and `LcarsPhonePaddScaffold` from `com.lcars.ui.padd`.
+
+## Documentation
+
+- [English component guide](COMPONENTS.en.md)
+- [中文组件说明](COMPONENTS.zh-CN.md)
+- [LCARS 24.2 CSS to Compose mapping](REFERENCE_MAPPING.md)
+

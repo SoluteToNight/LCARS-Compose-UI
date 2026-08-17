@@ -51,48 +51,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lcars.ui.LcarsAlertBanner
-import com.lcars.ui.LcarsBar
-import com.lcars.ui.LcarsButton
-import com.lcars.ui.LcarsButtonShape
-import com.lcars.ui.LcarsDataRow
-import com.lcars.ui.LcarsDataTable
-import com.lcars.ui.LcarsDividerGrid
-import com.lcars.ui.LcarsDividerGridType
-import com.lcars.ui.LcarsElbow
-import com.lcars.ui.LcarsElbowDirection
-import com.lcars.ui.LcarsFramePanel
-import com.lcars.ui.LcarsInspectBracket
-import com.lcars.ui.LcarsLabelAlign
-import com.lcars.ui.LcarsLogConsole
-import com.lcars.ui.LcarsLogEntry
-import com.lcars.ui.LcarsLogSeverity
-import com.lcars.ui.LcarsNumberMatrix
-import com.lcars.ui.LcarsNumericLabel
-import com.lcars.ui.LcarsProgressBar
-import com.lcars.ui.LcarsReadoutTicker
-import com.lcars.ui.LcarsResponsiveScaffold
-import com.lcars.ui.LcarsBarSegment
-import com.lcars.ui.LcarsSegmentedBar
-import com.lcars.ui.LcarsSegmentedMeter
-import com.lcars.ui.LcarsSegmentedSlider
-import com.lcars.ui.LcarsStatusLight
-import com.lcars.ui.LcarsTargetScanner
-import com.lcars.ui.LcarsTelemetryEntry
-import com.lcars.ui.LcarsTelemetryLayout
-import com.lcars.ui.LcarsTelemetryPanel
-import com.lcars.ui.LcarsTelemetryStatus
-import com.lcars.ui.LcarsText
-import com.lcars.ui.LocalLcarsColors
-import com.lcars.ui.LocalLcarsSpacing
-import com.lcars.ui.LocalLcarsTypography
-import com.lcars.ui.LcarsStyle
+import com.lcars.ui.theme.*
+import com.lcars.ui.foundation.*
+import com.lcars.ui.controls.*
+import com.lcars.ui.display.*
+import com.lcars.ui.layout.*
+import com.lcars.ui.scene.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+typealias LcarsStyle = com.lcars.ui.theme.LcarsPreset
 
 @Composable
 fun AtmosphericConditionsDemoScreen(
@@ -208,7 +180,7 @@ fun AtmosphericConditionsDemoScreen(
     val hasSectorAlert = remember(sectorAlerts) {
         sectorAlerts.any { it.level == NmcAlertLevel.Red || it.level == NmcAlertLevel.Orange || it.level == NmcAlertLevel.Yellow }
     }
-    val systemAlertActive = manualAlertOverride ?: (hasSectorAlert || simulatedAlert != null)
+    val systemAlertActive = manualAlertOverride ?: (simulatedAlert != null)
 
     // Auto-select first alert when filtered list changes
     LaunchedEffect(sectorAlerts) {
@@ -225,13 +197,13 @@ fun AtmosphericConditionsDemoScreen(
 
     val onClearSimulatedAlert = {
         simulatedAlert = null
-        manualAlertOverride = null
+        manualAlertOverride = false
     }
     val onToggleAlert = {
         if (systemAlertActive) {
             onClearSimulatedAlert()
         } else {
-            manualAlertOverride = true
+            onGenerateRandomAlert()
         }
     }
 
@@ -1054,7 +1026,7 @@ private fun WeatherCommandRail(
             text = if (alertActive) "clear advisory" else "storm advisory",
             color = colors.violet,
             shape = LcarsButtonShape.Rectangle,
-            alerting = alertActive,
+            alertLevel = if (alertActive) LcarsAlertLevel.Critical else null,
             minWidth = 0.dp,
             minHeight = if (compact) 42.dp else 54.dp,
             modifier = Modifier.fillMaxWidth(),
@@ -1126,7 +1098,7 @@ private fun WeatherButtonRow(
             text = if (alertActive) "clear advisory" else "storm simulation",
             color = colors.violet,
             shape = LcarsButtonShape.Rectangle,
-            alerting = alertActive,
+            alertLevel = if (alertActive) LcarsAlertLevel.Critical else null,
             minWidth = 0.dp,
             minHeight = 0.dp,
             modifier = Modifier.weight(1f),
@@ -1186,18 +1158,18 @@ private fun AlertStrip(
     val alertLevel = when {
         simulatedAlert != null -> {
             when (simulatedAlert.level) {
-                NmcAlertLevel.Red -> com.lcars.ui.LcarsAlertLevel.Critical
-                NmcAlertLevel.Orange, NmcAlertLevel.Yellow -> com.lcars.ui.LcarsAlertLevel.Warning
-                NmcAlertLevel.Blue -> com.lcars.ui.LcarsAlertLevel.Advisory
-                else -> com.lcars.ui.LcarsAlertLevel.Normal
+                NmcAlertLevel.Red -> LcarsAlertLevel.Critical
+                NmcAlertLevel.Orange, NmcAlertLevel.Yellow -> LcarsAlertLevel.Warning
+                NmcAlertLevel.Blue -> LcarsAlertLevel.Advisory
+                else -> LcarsAlertLevel.Normal
             }
         }
-        sectorAlerts.any { it.level == NmcAlertLevel.Red } -> com.lcars.ui.LcarsAlertLevel.Critical
-        sectorAlerts.any { it.level == NmcAlertLevel.Orange || it.level == NmcAlertLevel.Yellow } -> com.lcars.ui.LcarsAlertLevel.Warning
-        sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> com.lcars.ui.LcarsAlertLevel.Advisory
-        alertActive -> com.lcars.ui.LcarsAlertLevel.Warning
-        report.advisorySuggested -> com.lcars.ui.LcarsAlertLevel.Advisory
-        else -> com.lcars.ui.LcarsAlertLevel.Normal
+        sectorAlerts.any { it.level == NmcAlertLevel.Red } -> LcarsAlertLevel.Critical
+        sectorAlerts.any { it.level == NmcAlertLevel.Orange || it.level == NmcAlertLevel.Yellow } -> LcarsAlertLevel.Warning
+        sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> LcarsAlertLevel.Advisory
+        alertActive -> LcarsAlertLevel.Warning
+        report.advisorySuggested -> LcarsAlertLevel.Advisory
+        else -> LcarsAlertLevel.Normal
     }
 
     LcarsAlertBanner(
@@ -1727,7 +1699,7 @@ private fun WeatherMiniIcon(
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWeatherIcon(
     iconType: WeatherIconType,
-    colors: com.lcars.ui.LcarsColors,
+    colors: LcarsColorScheme,
     tempPath: Path,
     compact: Boolean = false,
 ) {
@@ -1989,7 +1961,7 @@ private fun weatherLogEntries(
             NmcAlertLevel.Blue -> LcarsLogSeverity.Info
             else -> LcarsLogSeverity.Info
         }
-        add(LcarsLogEntry("nmc warning active: ${warning.title}", severity, "nmc"))
+        add(LcarsLogEntry("warning active: ${warning.title}", severity, "nmc"))
     }
 
     if (simulatedAlert != null) {
@@ -2085,11 +2057,11 @@ private fun getAlertDirective(level: NmcAlertLevel): String {
     }
 }
 
-private fun getAlertLevelColor(level: NmcAlertLevel, colors: com.lcars.ui.LcarsColors): Color {
+private fun getAlertLevelColor(level: NmcAlertLevel, colors: LcarsColorScheme): Color {
     return when (level) {
         NmcAlertLevel.Red -> colors.alertRed
-        NmcAlertLevel.Orange -> Color(0xFFFF8800)
-        NmcAlertLevel.Yellow -> colors.monoAmber
+        NmcAlertLevel.Orange -> Color(0xFFFF7700)
+        NmcAlertLevel.Yellow -> Color(0xFFFFCC00)
         NmcAlertLevel.Blue -> colors.lightBlue
         NmcAlertLevel.Unknown -> colors.auxiliaryTan
     }
@@ -2375,11 +2347,11 @@ private fun WeatherAlertsDeck(
             }
         }
         val alertLevel = when {
-            sectorAlerts.any { it.level == NmcAlertLevel.Red } -> com.lcars.ui.LcarsAlertLevel.Critical
-            sectorAlerts.any { it.level == NmcAlertLevel.Orange } -> com.lcars.ui.LcarsAlertLevel.Warning
-            sectorAlerts.any { it.level == NmcAlertLevel.Yellow } -> com.lcars.ui.LcarsAlertLevel.Warning
-            sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> com.lcars.ui.LcarsAlertLevel.Advisory
-            else -> com.lcars.ui.LcarsAlertLevel.Normal
+            sectorAlerts.any { it.level == NmcAlertLevel.Red } -> LcarsAlertLevel.Critical
+            sectorAlerts.any { it.level == NmcAlertLevel.Orange } -> LcarsAlertLevel.Warning
+            sectorAlerts.any { it.level == NmcAlertLevel.Yellow } -> LcarsAlertLevel.Warning
+            sectorAlerts.any { it.level == NmcAlertLevel.Blue } -> LcarsAlertLevel.Advisory
+            else -> LcarsAlertLevel.Normal
         }
         val message = when {
             isNmcLoading -> "establishing downlink channel to nmc relay..."

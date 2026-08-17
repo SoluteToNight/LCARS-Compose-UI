@@ -2,132 +2,67 @@
 
 [English](README.md)
 
-`lcars-ui` 是可复用的 LCARS Compose UI 模块。它提供主题、基础几何组件、动态读数、数据面板和应用布局脚手架。
+`lcars-ui` 是 Jetpack Compose LCARS 组件库。v1 保持单一 Android AAR，同时按主题、基础能力、控件、数据显示、布局、完整场景和 PADD 组件拆分职责包。
 
 ## 安装
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoluteToNight:LCARS-Compose-UI:<version>")
+    implementation(project(":lcars-ui"))
 }
 ```
 
-该 artifact 通过 JitPack 发布，对应本模块的 release AAR。
+## 包结构
 
-## 组件文档
+| 包 | 职责 |
+| --- | --- |
+| `com.lcars.ui.theme` | 主题规范、三个预设、语义色、尺寸、形状、动效、声音 |
+| `com.lcars.ui.foundation` | 公共文本组件与底层文本能力 |
+| `com.lcars.ui.controls` | 按钮、开关、分段控件、对话框、命令轨 |
+| `com.lcars.ui.display` | 状态、进度、遥测、表格、日志、仪表和动态读数 |
+| `com.lcars.ui.layout` | 条块、弯角、框架、响应式脚手架和控制台布局 |
+| `com.lcars.ui.scene` | 星图、通信界面等完整场景模式 |
+| `com.lcars.ui.padd` | 手持 PADD 主题、脚手架、控件与读数 |
 
-- 中文组件说明：[COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md)
-- English component guide: [COMPONENTS.en.md](COMPONENTS.en.md)
+预览示例位于 `com.lcars.ui.preview`，业务应用不应依赖该包。
 
 ## 主题
 
-在 Compose 内容根部使用 `LcarsTheme` 或 `LcarsAdaptiveTheme`。它们会提供 `LocalLcarsColors`、`LocalLcarsTypography` 和 `LocalLcarsSpacing`。
-
-套用视觉风格的最简单方式是传入 `LcarsStyle`：
+使用三个基于参考 HTML/CSS 的预设之一：
 
 ```kotlin
-LcarsAdaptiveTheme(style = LcarsStyle.NemesisBlueUltra) {
-    LcarsConsoleScaffold(
-        leftWingContent = { /* commands */ },
-        mainDeckContent = { /* readouts */ },
-    )
-}
-```
+import com.lcars.ui.theme.LcarsPreset
+import com.lcars.ui.theme.LcarsTheme
 
-当前可用风格：
-
-- `LcarsStyle.StandardPadd`
-- `LcarsStyle.ClassicUltra`
-- `LcarsStyle.LowerDecks`
-- `LcarsStyle.LowerDecksPadd`
-- `LcarsStyle.NemesisBlueUltra`
-
-风格 token 会为主题下的所有 LCARS 组件设置默认颜色和间距。应用仍然可以显式覆盖：
-
-```kotlin
-LcarsTheme(
-    style = LcarsStyle.LowerDecks,
-    colors = customColors,
-    spacing = customSpacing,
-) {
+LcarsTheme(spec = LcarsPreset.NemesisBlueUltra.spec) {
     AppContent()
 }
 ```
 
-默认字体是 Antonio，一个开源窄体显示字体，使用 SIL Open Font License。应用可以通过传入自定义 `LcarsTypography` 来使用其他已授权的类 LCARS 字体。
+- `LcarsPreset.ClassicUltra`
+- `LcarsPreset.NemesisBlueUltra`
+- `LcarsPreset.LowerDecksPadd`
 
-## 核心组件
-
-- `LcarsButton`：pill、start-rounded、end-rounded、rectangle 等命令控件。
-- `LcarsBar`：带可选端帽和内嵌标签的水平 LCARS 条块。
-- `LcarsElbow`：四方向 Canvas 弯角几何。
-- `LcarsFramePanel`：带 LCARS 标题/页脚条的内容框架。
-- `LcarsSegmentedBar`、`LcarsConsoleFrame`、`LcarsFramedCommandRail`、`LcarsOptionStrip`：从 demo 反哺出的中层 pattern 组件，用于搭建自己的 LCARS 设计系统。
-- `LcarsTelemetryPanel`：响应式遥测读数网格。
-- `LcarsDataTable`：高密度状态表格。
-
-## 手机 PADD 变体
-
-手机 PADD 变体是一组面向手持竖屏的紧凑布局组件，提取 standard PADD 参考图中的黑底、橙色数据条、紫色端帽、少量侧栏和高密度文本读数特征，同时降低装饰性几何密度。
-
-- `LcarsPhonePaddTheme`：为手机 PADD 屏幕提供紧凑字体和间距。默认使用 `LcarsStyle.StandardPadd`，也可以传入任何已有 `LcarsStyle`。
-- `LcarsPhonePaddScaffold`：手机竖屏外壳，包含紧凑头部、可选侧边轨、内容区、页脚控制和状态条。
-- `LcarsPaddHeader`、`LcarsPaddSideRail`、`LcarsPaddStatusStrip`：PADD 专用结构组件。
-- `LcarsPaddControl`、`LcarsPaddReadoutPanel`、`LcarsPaddDataLines`、`LcarsPaddMessage`：适合手持 PADD 的高密度控制块和读数面板。
-
-示例：
-
-```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
-    LcarsPhonePaddScaffold(title = "systems data 21-0071") {
-        LcarsPaddReadoutPanel(title = "hansen family") {
-            LcarsPaddDataLines(listOf("archive link nominal", "message buffer ready"))
-        }
-    }
-}
-```
-
-## 动态组件
-
-- `LcarsAlertBanner`
-- `LcarsStatusLight`
-- `LcarsProgressBar`
-- `LcarsSegmentedMeter`
-- `LcarsScannerSweep`
-- `LcarsReadoutTicker`
-
-告警效果使用 stepped keyframes，不使用平滑呼吸式淡入淡出。
-
-## 扩展组件
-
-- `LcarsCommandRail`
-- `LcarsSegmentedControl`
-- `LcarsToggle`
-- `LcarsDialog`
-- `LcarsLogConsole`
-- `LcarsNumberMatrix`
-- `LcarsStarCoords`
-- `LcarsNumericLabel`
-- `LcarsDividerGrid`
-- `LcarsInspectBracket`
-- `LcarsTargetScanner`
-- `LcarsResponsiveScaffold`
-- `LcarsTransmissionFrame`
-- `LcarsStarChart`
-
-## 布局脚手架
-
-- `LcarsAppScaffold`：通用 app 外壳，包含顶部条、控制 rail、内容区域和可选页脚。
-- `LcarsPaddScaffold`：适合竖屏 PADD 的外壳。
-- `LcarsPhonePaddScaffold`：降低装饰密度的手机竖屏 PADD 外壳。
-- `LcarsConsoleScaffold`：基于 `LcarsMainConsole` 的横屏 console 外壳。
+通过 `LcarsTheme.colorScheme`、`typography`、`dimensions`、`shapes` 和 `motionScheme` 读取语义 token。宿主应用可传入 `LcarsMotionMode.Reduced` 或 `Off`。声音通过 `LcarsSoundPlayer` 显式注入，默认保持静音。
 
 ## 示例
 
 ```kotlin
+import com.lcars.ui.display.LcarsAlertBanner
+import com.lcars.ui.display.LcarsProgressBar
+import com.lcars.ui.layout.LcarsFramePanel
+
 LcarsFramePanel(title = "dynamic states") {
-    LcarsStatusLight(label = "sensor lock", active = true)
     LcarsProgressBar(progress = 0.64f, label = "reactor balance")
     LcarsAlertBanner(message = "critical alert active", active = true)
 }
 ```
+
+手持布局使用 `com.lcars.ui.padd` 中的 `LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd)` 与 `LcarsPhonePaddScaffold`。
+
+## 文档
+
+- [中文组件说明](COMPONENTS.zh-CN.md)
+- [English component guide](COMPONENTS.en.md)
+- [LCARS 24.2 CSS 到 Compose 映射](REFERENCE_MAPPING.md)
+

@@ -44,9 +44,11 @@ Use a GitHub release tag, a short commit hash, or `master-SNAPSHOT` as the versi
 ./gradlew.bat installDebug
 ```
 
-Android Studio provides two app run targets when shared run configurations are loaded:
+The launcher opens a responsive Demo Hub with three terminals. Android Studio also provides direct demo targets when shared run configurations are loaded:
 
-- `app`: launches the original responsive demo app.
+- `LCARS Demo`: launches the Demo Hub.
+- `Component Catalog`: launches the searchable component catalog directly.
+- `Weather System`: launches the atmospheric/weather console only.
 - `PADD Variant`: launches the isolated phone portrait PADD variant demo through `PaddVariantActivity`.
 
 Unit and compile checks:
@@ -64,13 +66,16 @@ Unit and compile checks:
 - Data/display components: telemetry panel, data table, log console, number matrix, star coordinates, and related readouts.
 - Layout templates: app, PADD, console, and responsive scaffolds.
 - Phone PADD variant components: compact PADD scaffold, side rail, status strips, readout panels, and controls for handheld portrait layouts.
-- Demo app with three layout breakpoints: portrait PADD, compact landscape, and wide landscape.
-- Separate PADD variant demo activity that does not replace or alter the original launcher demo.
+- Responsive Demo Hub with portrait, compact landscape, and wide landscape layouts.
+- Independent component catalog, weather console, and PADD variant activities available from the Hub or direct run configurations.
 
 ## Component Documentation
 
 - 中文组件说明：[lcars-ui/COMPONENTS.zh-CN.md](lcars-ui/COMPONENTS.zh-CN.md)
 - English component guide: [lcars-ui/COMPONENTS.en.md](lcars-ui/COMPONENTS.en.md)
+- Reference CSS mapping: [lcars-ui/REFERENCE_MAPPING.md](lcars-ui/REFERENCE_MAPPING.md)
+
+The v1 AAR uses responsibility packages: `theme`, `foundation`, `controls`, `display`, `layout`, `scene`, and `padd` under `com.lcars.ui`. The old root-package component API is intentionally removed.
 
 ## Font Policy
 
@@ -102,7 +107,7 @@ LcarsTheme {
 Phone PADD variant:
 
 ```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd) {
     LcarsPhonePaddScaffold(
         title = "systems data 21-0071",
         registry = "uss raven - database 83-s28",

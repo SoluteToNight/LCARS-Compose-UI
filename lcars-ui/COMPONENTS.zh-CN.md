@@ -6,10 +6,10 @@
 
 ## 使用方式
 
-所有组件都应放在 `LcarsTheme` 下使用。主题提供 LCARS 颜色、字体和间距 token。
+所有组件都应放在 `LcarsTheme` 下使用，并从新的职责包导入 API，不再依赖旧根包。
 
 ```kotlin
-LcarsTheme(style = LcarsStyle.ClassicUltra) {
+LcarsTheme(spec = LcarsPreset.ClassicUltra.spec) {
     LcarsFramePanel(title = "sensor deck") {
         LcarsStatusLight(label = "sensor lock", active = true)
         LcarsProgressBar(progress = 0.64f, label = "reactor balance")
@@ -21,54 +21,44 @@ LcarsTheme(style = LcarsStyle.ClassicUltra) {
 
 ### `LcarsTheme`
 
-功能：为组件树提供 LCARS 专用的颜色、字体和间距，不依赖动态 Material 颜色。
+功能：为组件树提供不可变 LCARS 规范，不依赖 Material 色板或动态取色。
 
 主要内容：
 
-- `LcarsStyle`：预设风格 token 集。当前包括 `StandardPadd`、`ClassicUltra`、`LowerDecks`、`LowerDecksPadd` 和 `NemesisBlueUltra`。
-- `LcarsColors`：LCARS 色板，包括琥珀色、浅蓝、紫色、警报红、战术绿、黑色背景等。
+- `LcarsPreset`：仅保留三个参考预设：`ClassicUltra`、`NemesisBlueUltra`、`LowerDecksPadd`。
+- `LcarsColorScheme`：背景、控件、遥测、状态和告警的语义颜色角色。
 - `LcarsTypography`：标题、按钮、遥测、短标签文字样式。
-- `LcarsSpacing`：标准间距、按钮最小尺寸、条形高度、elbow 厚度等。
+- `LcarsDimensions`：标准间距、触摸目标、条形、elbow、命令轨和响应式几何。
+- `LcarsShapes`：可复用 LCARS 几何契约。
+- `LcarsMotionScheme` / `LcarsMotionMode`：阶跃动效时序与系统/减少/关闭模式。
+- `LcarsSoundPlayer`：由宿主按需注入声音，默认实现静音。
 
 适用场景：应用根节点、预览、独立组件示例。
 
-套用风格：
+套用预设：
 
 ```kotlin
-LcarsTheme(style = LcarsStyle.LowerDecks) {
+LcarsTheme(spec = LcarsPreset.NemesisBlueUltra.spec) {
     AppContent()
 }
 ```
 
-显式传入的 token 会覆盖风格默认值：
+复制预设以创建自定义规范：
 
 ```kotlin
-LcarsTheme(
-    style = LcarsStyle.NemesisBlueUltra,
-    colors = customColors,
-    spacing = customSpacing,
-) {
+LcarsTheme(spec = LcarsPreset.ClassicUltra.spec.copy(
+    colorScheme = customColors,
+    dimensions = customDimensions,
+)) {
     AppContent()
 }
 ```
 
-### `LcarsAdaptiveTheme`
-
-功能：在 `LcarsTheme` 之上增加横竖屏/紧凑横屏自适应 token。它根据容器宽高解析 `LcarsResponsiveMode`，并提供 `LocalLcarsAdaptiveProfile`。
-
-行为约定：
-
-- 宽横屏保持默认尺寸。
-- 竖屏和紧凑横屏压缩几何尺寸、间距、按钮高度、命令轨宽度等。
-- 字体保持默认一倍逻辑分辨率和原有 `sp` 大小；自适应主题不额外放大、缩小或重采样字体。
-
-适用场景：应用根节点、demo 根节点、需要横竖屏自动切换尺寸 token 的页面。
-
-`LcarsAdaptiveTheme` 接受和 `LcarsTheme` 相同的 `style`、`colors`、`typography`、`spacing` 参数；自适应尺寸会在风格间距解析后再应用。
+通过 `LcarsTheme.colorScheme`、`typography`、`dimensions`、`shapes` 和 `motionScheme` 读取 token。容器自适应使用 `LcarsResponsiveScaffold` 或 `resolveLcarsSizeClass`。
 
 ### `LcarsPhonePaddTheme`
 
-功能：为手机 PADD 界面提供更紧凑的字体和间距，同时继续使用同一套 LCARS 颜色/风格 token。默认风格是 `LcarsStyle.StandardPadd`，对应 standard PADD 参考图中的橙色/紫色手持设备风格；也可以把 `ClassicUltra`、`LowerDecks`、`LowerDecksPadd`、`NemesisBlueUltra` 或自定义颜色应用到同一组 PADD 组件上。
+功能：为手机 PADD 界面提供紧凑字体和间距，并沿用同一个主题规范。默认使用 `LcarsPreset.LowerDecksPadd`，也接受其余两个预设。
 
 适用场景：独立手机竖屏 PADD 页面，以及不希望继承大型控制台几何密度的演示界面。
 
@@ -84,8 +74,8 @@ LcarsTheme(
 - `onClick`：点击回调。
 - `color` / `contentColor`：背景色和文字色。
 - `shape`：`Pill`、`BlockStart`、`BlockEnd`、`Rectangle`。
-- `alerting`：启用阶跃式警报闪烁。
-- `enabled`：禁用时按 LCARS 参考行为隐藏。
+- `alertLevel`：可选的阶跃告警行为和语义严重级别。
+- `enabled`：禁用控件保持可见，以降低透明度呈现并暴露禁用语义。
 
 适用场景：命令入口、模式切换、确认操作、侧边控制组。
 
@@ -424,7 +414,7 @@ LcarsTheme(
 示例：
 
 ```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd) {
     LcarsPhonePaddScaffold(
         title = "systems data 21-0071",
         registry = "uss raven - database 83-s28",

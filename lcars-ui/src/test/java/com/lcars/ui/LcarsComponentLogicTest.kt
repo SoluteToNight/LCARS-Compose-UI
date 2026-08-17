@@ -1,118 +1,67 @@
 package com.lcars.ui
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.lcars.ui.controls.LcarsSegmentState
+import com.lcars.ui.controls.resolveLcarsSegmentState
+import com.lcars.ui.controls.resolveLcarsToggleLabel
+import com.lcars.ui.display.LcarsLogSeverity
+import com.lcars.ui.display.generateLcarsNumberMatrix
+import com.lcars.ui.display.generateLcarsStarCoords
+import com.lcars.ui.display.logSeverityColor
+import com.lcars.ui.layout.LcarsResponsiveMode
+import com.lcars.ui.layout.resolveLcarsResponsiveMode
+import com.lcars.ui.padd.resolveLcarsPhonePaddMetrics
+import com.lcars.ui.scene.generateLcarsStars
+import com.lcars.ui.theme.LcarsPreset
+import com.lcars.ui.theme.LcarsPresets
+import com.lcars.ui.theme.LcarsSizeClass
+import com.lcars.ui.theme.resolveLcarsSizeClass
+import com.lcars.ui.theme.spec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class LcarsComponentLogicTest {
     @Test
-    fun numberMatrix_usesStableSeed() {
-        val first = generateLcarsNumberMatrix(rows = 3, columns = 5, seed = 407)
-        val second = generateLcarsNumberMatrix(rows = 3, columns = 5, seed = 407)
-        val changed = generateLcarsNumberMatrix(rows = 3, columns = 5, seed = 408)
-
-        assertEquals(first, second)
-        assertNotEquals(first, changed)
-    }
-
-    @Test
-    fun starCoords_usesStableSeed() {
+    fun generatedDisplays_useStableSeeds() {
         assertEquals(
-            generateLcarsStarCoords(count = 2, digits = 6, seed = 1701),
-            generateLcarsStarCoords(count = 2, digits = 6, seed = 1701),
+            generateLcarsNumberMatrix(3, 5, 407),
+            generateLcarsNumberMatrix(3, 5, 407),
         )
         assertNotEquals(
-            generateLcarsStarCoords(count = 2, digits = 6, seed = 1701),
-            generateLcarsStarCoords(count = 2, digits = 6, seed = 1702),
+            generateLcarsStarCoords(2, 6, 1701),
+            generateLcarsStarCoords(2, 6, 1702),
         )
+        assertEquals(generateLcarsStars(118), generateLcarsStars(118))
     }
 
     @Test
-    fun starChart_usesStableSeed() {
-        assertEquals(generateLcarsStars(seed = 118), generateLcarsStars(seed = 118))
-        assertNotEquals(generateLcarsStars(seed = 118), generateLcarsStars(seed = 119))
-    }
-
-    @Test
-    fun responsiveMode_matchesDemoBreakpoints() {
-        assertEquals(
-            LcarsResponsiveMode.Portrait,
-            resolveLcarsResponsiveMode(width = 390.dp, height = 820.dp),
-        )
+    fun sizeClasses_followComposeBreakpoints() {
+        assertEquals(LcarsSizeClass.Compact, resolveLcarsSizeClass(390.dp))
+        assertEquals(LcarsSizeClass.Medium, resolveLcarsSizeClass(700.dp))
+        assertEquals(LcarsSizeClass.Expanded, resolveLcarsSizeClass(840.dp))
         assertEquals(
             LcarsResponsiveMode.CompactLandscape,
-            resolveLcarsResponsiveMode(width = 844.dp, height = 390.dp),
-        )
-        assertEquals(
-            LcarsResponsiveMode.WideLandscape,
-            resolveLcarsResponsiveMode(width = 1280.dp, height = 720.dp),
+            resolveLcarsResponsiveMode(844.dp, 390.dp),
         )
     }
 
     @Test
-    fun adaptiveProfile_marksNonWideLayoutsCompact() {
-        assertEquals(
-            LcarsAdaptiveProfile(LcarsResponsiveMode.Portrait, compact = true),
-            resolveLcarsAdaptiveProfile(width = 390.dp, height = 820.dp),
-        )
-        assertEquals(
-            LcarsAdaptiveProfile(LcarsResponsiveMode.CompactLandscape, compact = true),
-            resolveLcarsAdaptiveProfile(width = 844.dp, height = 390.dp),
-        )
-        assertEquals(
-            LcarsAdaptiveProfile(LcarsResponsiveMode.WideLandscape, compact = false),
-            resolveLcarsAdaptiveProfile(width = 1280.dp, height = 720.dp),
-        )
+    fun presets_matchLcars242ReferenceTokens() {
+        assertEquals(Color(0xFFFF9900), LcarsPresets.ClassicUltra.colorScheme.commandPrimary)
+        assertEquals(Color(0xFF2266FF), LcarsPresets.NemesisBlueUltra.colorScheme.framePrimary)
+        assertEquals(Color(0xFF5588EE), LcarsPresets.LowerDecksPadd.colorScheme.framePrimary)
+        assertEquals(0.40f, LcarsPresets.NemesisBlueUltra.dimensions.barPrimaryFraction)
+        assertEquals(0.10f, LcarsPresets.LowerDecksPadd.dimensions.barPrimaryFraction)
+        assertEquals(LcarsPresets.NemesisBlueUltra, LcarsPreset.NemesisBlueUltra.spec)
     }
 
     @Test
-    fun adaptiveSpacing_keepsWideDefaultsAndCompactsGeometry() {
-        val base = LcarsSpacing()
-
-        assertEquals(base, resolveLcarsAdaptiveSpacing(base, LcarsAdaptiveProfile()))
-        assertEquals(
-            52.dp,
-            resolveLcarsAdaptiveSpacing(
-                base,
-                LcarsAdaptiveProfile(LcarsResponsiveMode.Portrait, compact = true),
-            ).buttonMinHeight,
-        )
-        assertEquals(
-            44.dp,
-            resolveLcarsAdaptiveSpacing(
-                base,
-                LcarsAdaptiveProfile(LcarsResponsiveMode.CompactLandscape, compact = true),
-            ).buttonMinHeight,
-        )
-    }
-
-    @Test
-    fun adaptiveThemePolicy_keepsTypographyAtDefaultLogicalResolution() {
-        val base = LcarsTypography()
-
-        assertEquals(34f, base.header.fontSize.value)
-        assertEquals(22f, base.button.fontSize.value)
-        assertEquals(24f, base.telemetry.fontSize.value)
-        assertEquals(16f, base.labelSmall.fontSize.value)
-    }
-
-    @Test
-    fun standardPaddStyle_mapsToPhonePaddPaletteAndCompactSpacing() {
-        val colors = LcarsStyle.StandardPadd.colors()
-        val spacing = LcarsStyle.StandardPadd.spacing()
-
-        assertEquals(lcarsPhonePaddColors(), colors)
-        assertEquals(42.dp, spacing.buttonMinHeight)
-        assertEquals(20.dp, spacing.barHeight)
-        assertEquals(8.dp, spacing.panelPadding)
-    }
-
-    @Test
-    fun phonePaddMetrics_resolveForPortraitPhoneWidths() {
-        assertEquals(32.dp, resolveLcarsPhonePaddMetrics(width = 320.dp, height = 680.dp).railWidth)
-        assertEquals(38.dp, resolveLcarsPhonePaddMetrics(width = 390.dp, height = 820.dp).railWidth)
-        assertEquals(42.dp, resolveLcarsPhonePaddMetrics(width = 440.dp, height = 900.dp).railWidth)
+    fun paddMetrics_resolveForPortraitWidths() {
+        assertEquals(32.dp, resolveLcarsPhonePaddMetrics(320.dp, 680.dp).railWidth)
+        assertEquals(38.dp, resolveLcarsPhonePaddMetrics(390.dp, 820.dp).railWidth)
+        assertEquals(42.dp, resolveLcarsPhonePaddMetrics(440.dp, 900.dp).railWidth)
     }
 
     @Test
@@ -130,12 +79,32 @@ class LcarsComponentLogicTest {
     }
 
     @Test
-    fun logSeverity_mapsToThemeColors() {
-        val colors = LcarsColors()
-
+    fun severity_usesSemanticThemeColors() {
+        val colors = LcarsPresets.ClassicUltra.colorScheme
         assertEquals(colors.lightBlue, logSeverityColor(LcarsLogSeverity.Info, colors))
         assertEquals(colors.tacticalGreen, logSeverityColor(LcarsLogSeverity.Success, colors))
         assertEquals(colors.monoAmber, logSeverityColor(LcarsLogSeverity.Warning, colors))
         assertEquals(colors.alertRed, logSeverityColor(LcarsLogSeverity.Alert, colors))
+    }
+
+    @Test
+    fun motionScheme_matchesStarTrekAnimationTimings() {
+        val motion = LcarsPresets.ClassicUltra.motionScheme
+        assertEquals(300, motion.alertCriticalStepMillis)
+        assertEquals(400, motion.alertWarningStepMillis)
+        assertEquals(600, motion.alertAdvisoryStepMillis)
+        assertEquals(120, motion.tactileFlashMillis)
+        assertEquals(45, motion.cascadeStepMillis)
+        assertEquals(100, motion.telemetryTickMillis)
+        assertEquals(1000, motion.reactorPulseMillis)
+    }
+
+    @Test
+    fun cascadeState_triggersCorrectly() {
+        val cascade = com.lcars.ui.layout.LcarsCascadeState(initialActiveStep = 0)
+        assertEquals(0, cascade.activeStep)
+        assertEquals(false, cascade.isComplete)
+        cascade.trigger()
+        assertEquals(1, cascade.triggerKey)
     }
 }

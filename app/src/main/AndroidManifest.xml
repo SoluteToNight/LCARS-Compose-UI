@@ -19,7 +19,9 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:screenOrientation="landscape"
+            android:screenOrientation="sensorLandscape"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
             android:theme="@style/Theme.LcarsUi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,9 +30,36 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".WeatherSystemActivity"
+            android:exported="true"
+            android:label="LCARS Weather System"
+            android:screenOrientation="sensorLandscape"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.LcarsUi" />
+        <activity
+            android:name=".ComponentCatalogActivity"
+            android:exported="true"
+            android:label="LCARS Component Catalog"
+            android:screenOrientation="sensorLandscape"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.LcarsUi" />
+        <activity
             android:name=".PaddVariantActivity"
             android:exported="true"
             android:label="LCARS PADD Variant"
+            android:screenOrientation="sensorLandscape"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.LcarsUi" />
+        <activity
+            android:name=".ScreenshotExportActivity"
+            android:exported="true"
+            android:label="LCARS Screenshot Exporter"
+            android:screenOrientation="sensorLandscape"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
             android:theme="@style/Theme.LcarsUi" />
     </application>
 

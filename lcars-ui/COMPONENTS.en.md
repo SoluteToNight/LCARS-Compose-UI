@@ -6,10 +6,10 @@ Chinese version: [COMPONENTS.zh-CN.md](COMPONENTS.zh-CN.md).
 
 ## Basic Usage
 
-Place LCARS components under `LcarsTheme`. The theme provides LCARS-specific color, typography, and spacing tokens.
+Place LCARS components under `LcarsTheme`. Import APIs from their responsibility package rather than the old root package.
 
 ```kotlin
-LcarsTheme(style = LcarsStyle.ClassicUltra) {
+LcarsTheme(spec = LcarsPreset.ClassicUltra.spec) {
     LcarsFramePanel(title = "sensor deck") {
         LcarsStatusLight(label = "sensor lock", active = true)
         LcarsProgressBar(progress = 0.64f, label = "reactor balance")
@@ -21,54 +21,44 @@ LcarsTheme(style = LcarsStyle.ClassicUltra) {
 
 ### `LcarsTheme`
 
-Purpose: provides LCARS color, typography, and spacing values for the component tree without depending on dynamic Material colors.
+Purpose: provides an immutable LCARS specification without depending on Material color or dynamic color.
 
 Main pieces:
 
-- `LcarsStyle`: predefined style token sets. Available values are `StandardPadd`, `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, and `NemesisBlueUltra`.
-- `LcarsColors`: LCARS palette, including amber, light blue, violet, alert red, tactical green, and black surfaces.
+- `LcarsPreset`: exactly three reference-backed presets: `ClassicUltra`, `NemesisBlueUltra`, and `LowerDecksPadd`.
+- `LcarsColorScheme`: semantic roles for backgrounds, controls, telemetry, status, and alerts.
 - `LcarsTypography`: text styles for headers, buttons, telemetry, and small labels.
-- `LcarsSpacing`: standard gap, button minimum size, bar height, elbow thickness, and related layout values.
+- `LcarsDimensions`: standard gaps, touch targets, bars, elbows, rails, and responsive geometry.
+- `LcarsShapes`: reusable LCARS geometry contracts.
+- `LcarsMotionScheme` / `LcarsMotionMode`: stepped animation timing and system/reduced/off behavior.
+- `LcarsSoundPlayer`: optional host-provided sound; the default implementation is silent.
 
 Use for: app roots, previews, and isolated component examples.
 
-Style application:
+Preset application:
 
 ```kotlin
-LcarsTheme(style = LcarsStyle.LowerDecks) {
+LcarsTheme(spec = LcarsPreset.NemesisBlueUltra.spec) {
     AppContent()
 }
 ```
 
-Explicit tokens override style defaults:
+Create a custom spec by copying a preset:
 
 ```kotlin
-LcarsTheme(
-    style = LcarsStyle.NemesisBlueUltra,
-    colors = customColors,
-    spacing = customSpacing,
-) {
+LcarsTheme(spec = LcarsPreset.ClassicUltra.spec.copy(
+    colorScheme = customColors,
+    dimensions = customDimensions,
+)) {
     AppContent()
 }
 ```
 
-### `LcarsAdaptiveTheme`
-
-Purpose: adds portrait/compact-landscape adaptive tokens on top of `LcarsTheme`. It resolves `LcarsResponsiveMode` from the container size and provides `LocalLcarsAdaptiveProfile`.
-
-Behavior:
-
-- Wide landscape keeps the default sizes.
-- Portrait and compact landscape compress geometry, spacing, button heights, and command rail widths.
-- Text keeps the default 1x logical resolution and existing `sp` sizes; the adaptive theme does not additionally scale, shrink, or resample typography.
-
-Use for: app roots, demo roots, and screens that should automatically switch LCARS sizing tokens across portrait and landscape.
-
-`LcarsAdaptiveTheme` accepts the same `style`, `colors`, `typography`, and `spacing` inputs as `LcarsTheme`; adaptive sizing is applied after the style spacing is resolved.
+Read tokens through `LcarsTheme.colorScheme`, `typography`, `dimensions`, `shapes`, and `motionScheme`. Use `LcarsResponsiveScaffold` or `resolveLcarsSizeClass` for container-based adaptation.
 
 ### `LcarsPhonePaddTheme`
 
-Purpose: provides compact phone-PADD typography and spacing while still using the same LCARS color/style token system. It defaults to `LcarsStyle.StandardPadd`, the standard orange/violet handheld PADD style, but can apply `ClassicUltra`, `LowerDecks`, `LowerDecksPadd`, `NemesisBlueUltra`, or explicit custom colors to the same PADD components.
+Purpose: provides compact phone-PADD typography and spacing using the same theme spec. It defaults to `LcarsPreset.LowerDecksPadd` and accepts any of the three presets.
 
 Use for: isolated phone portrait PADD screens and demos that should not inherit the larger console geometry density.
 
@@ -84,8 +74,8 @@ Key parameters:
 - `onClick`: click callback.
 - `color` / `contentColor`: background and text colors.
 - `shape`: `Pill`, `BlockStart`, `BlockEnd`, or `Rectangle`.
-- `alerting`: enables stepped alert flashing.
-- `enabled`: disabled controls are hidden, matching the LCARS reference behavior.
+- `alertLevel`: selects optional stepped alert behavior and semantic severity.
+- `enabled`: disabled controls remain visible at reduced opacity and expose disabled semantics.
 
 Use for: commands, mode actions, confirmations, and side control groups.
 
@@ -424,7 +414,7 @@ Components:
 Example:
 
 ```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd) {
     LcarsPhonePaddScaffold(
         title = "systems data 21-0071",
         registry = "uss raven - database 83-s28",

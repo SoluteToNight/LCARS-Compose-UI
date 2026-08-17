@@ -44,9 +44,11 @@ dependencies {
 ./gradlew.bat installDebug
 ```
 
-Android Studio 加载共享运行配置后会有两个 app 启动项：
+应用启动后会进入响应式 Demo Hub，并提供三个演示终端。Android Studio 加载共享运行配置后也可以直接启动各个 Demo：
 
-- `app`：启动原有响应式演示应用。
+- `LCARS Demo`：启动 Demo Hub。
+- `Component Catalog`：直接启动可搜索组件目录。
+- `Weather System`：仅启动大气/天气控制台。
 - `PADD Variant`：通过 `PaddVariantActivity` 启动独立的手机竖屏 PADD 变体演示。
 
 单元测试和编译检查：
@@ -64,13 +66,16 @@ Android Studio 加载共享运行配置后会有两个 app 启动项：
 - 数据/显示组件：遥测面板、数据表、日志控制台、数字矩阵、星图坐标等。
 - 布局模板：app、PADD、console 和响应式脚手架。
 - 手机 PADD 变体组件：适配手持竖屏布局的紧凑 PADD scaffold、侧边轨、状态条、读数面板和控制块。
-- 演示应用：支持 portrait PADD、compact landscape、wide landscape 三种断点。
-- 独立 PADD 变体演示 Activity，不替换也不改变原有 launcher demo。
+- 响应式 Demo Hub：支持竖屏、紧凑横屏和宽横屏三种布局。
+- 组件目录、天气控制台和 PADD 变体均可从 Hub 进入，也可通过独立运行配置直接启动。
 
 ## 组件文档
 
 - 中文组件说明：[lcars-ui/COMPONENTS.zh-CN.md](lcars-ui/COMPONENTS.zh-CN.md)
 - English component guide: [lcars-ui/COMPONENTS.en.md](lcars-ui/COMPONENTS.en.md)
+- 参考 CSS 映射：[lcars-ui/REFERENCE_MAPPING.md](lcars-ui/REFERENCE_MAPPING.md)
+
+v1 AAR 在 `com.lcars.ui` 下按 `theme`、`foundation`、`controls`、`display`、`layout`、`scene` 和 `padd` 拆分职责包；旧根包组件 API 已破坏性移除。
 
 ## 字体策略
 
@@ -102,7 +107,7 @@ LcarsTheme {
 手机 PADD 变体：
 
 ```kotlin
-LcarsPhonePaddTheme(style = LcarsStyle.StandardPadd) {
+LcarsPhonePaddTheme(preset = LcarsPreset.LowerDecksPadd) {
     LcarsPhonePaddScaffold(
         title = "systems data 21-0071",
         registry = "uss raven - database 83-s28",
