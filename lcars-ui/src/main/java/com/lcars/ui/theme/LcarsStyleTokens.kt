@@ -202,16 +202,13 @@ val LcarsColorScheme.weatherSensorLabel: Color get() = readoutAccent
  * Stage 9 Color Principle: Alternating Rhythm.
  * Provides a harmonious, high-contrast color sequence for high-density button columns and matrices.
  */
-fun LcarsColorScheme.keypadRhythm(index: Int): Color {
-    val sequence = listOf(
-        monoAmber,      // Okuda Orange / Primary Mode
-        auxiliaryTan,   // Butter / Peach
-        lightBlue,      // Federation Ice Blue
-        violet,         // Soft Lilac
-        butterscotch,   // Warm Amber
-        tacticalGreen,  // Sub-System Accent
-    )
-    return sequence[index.mod(sequence.size)]
+fun LcarsColorScheme.keypadRhythm(index: Int): Color = when (index.mod(6)) {
+    0 -> monoAmber      // Okuda Orange / Primary Mode
+    1 -> auxiliaryTan   // Butter / Peach
+    2 -> lightBlue      // Federation Ice Blue
+    3 -> violet         // Soft Lilac
+    4 -> butterscotch   // Warm Amber
+    else -> tacticalGreen // Sub-System Accent
 }
 
 fun LcarsColorScheme.keypadRhythmList(): List<Color> = listOf(

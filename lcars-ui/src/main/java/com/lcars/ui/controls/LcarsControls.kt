@@ -10,6 +10,7 @@ import com.lcars.ui.padd.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -137,28 +139,32 @@ fun LcarsSegmentedControl(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    enabledOptions: Set<String> = options.toSet(),
+    enabledOptions: Set<String>? = null,
     selectedColor: Color = LocalLcarsColors.current.commandPrimary,
     unselectedColor: Color = LocalLcarsColors.current.commandSecondary,
     alerting: Boolean = false,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard
+    val resolvedEnabled = enabledOptions ?: remember(options) { options.toSet() }
+
+    val animatedSelectedColor = steppedAlertColor(
+        baseColor = selectedColor,
+        alertColor = colors.alertRed,
+        active = alerting,
+    )
 
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .selectableGroup()
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(gap),
     ) {
         options.forEachIndexed { index, option ->
-            val state = resolveLcarsSegmentState(option, selectedOption, enabledOptions)
+            val state = resolveLcarsSegmentState(option, selectedOption, resolvedEnabled)
             val selected = state == LcarsSegmentState.Selected
             val enabled = state != LcarsSegmentState.Disabled
-            val baseColor = if (selected) selectedColor else unselectedColor
-            val displayColor = steppedAlertColor(
-                baseColor = baseColor,
-                alertColor = colors.alertRed,
-                active = alerting && selected,
-            )
+            val displayColor = if (selected) animatedSelectedColor else unselectedColor
             val shape = when {
                 options.size == 1 -> LcarsButtonShape.Pill
                 index == 0 -> LcarsButtonShape.BlockStart
@@ -232,7 +238,7 @@ fun LcarsToggle(
                 text = uncheckedLabel,
                 modifier = Modifier.padding(bottom = 2.dp),
                 style = LocalLcarsTypography.current.labelSmall.copy(
-                    color = if (checked) colors.text.copy(alpha = 0.7f) else Color.Black
+                    color = if (checked) colors.text.copy(alpha = 0.7f) else Color.Black,
                 ),
                 maxLines = 1,
             )
@@ -251,7 +257,7 @@ fun LcarsToggle(
                 text = checkedLabel,
                 modifier = Modifier.padding(bottom = 2.dp),
                 style = LocalLcarsTypography.current.labelSmall.copy(
-                    color = if (checked) Color.Black else colors.text.copy(alpha = 0.7f)
+                    color = if (checked) Color.Black else colors.text.copy(alpha = 0.7f),
                 ),
                 maxLines = 1,
             )
@@ -262,13 +268,14 @@ fun LcarsToggle(
 @Composable
 fun LcarsDialog(
     title: String,
-    message: String,
     confirmLabel: String,
     dismissLabel: String,
-    level: LcarsAlertLevel = LcarsAlertLevel.Warning,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    message: String = "",
+    level: LcarsAlertLevel = LcarsAlertLevel.Warning,
+    content: (@Composable () -> Unit)? = null,
 ) {
     val colors = LocalLcarsColors.current
     val accent = when (level) {
@@ -299,20 +306,31 @@ fun LcarsDialog(
                 labelAlign = LcarsLabelAlign.End,
                 labelColor = colors.background,
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.panel)
-                    .padding(12.dp),
-            ) {
-                LcarsText(
-                    text = message,
-                    style = LocalLcarsTypography.current.telemetry.copy(color = colors.lightBlue),
-                    maxLines = 4,
-                    autoFit = false,
-                    overflow = TextOverflow.Ellipsis,
-                    softWrap = true,
-                )
+            if (content != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.panel)
+                        .padding(12.dp),
+                ) {
+                    content()
+                }
+            } else if (message.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.panel)
+                        .padding(12.dp),
+                ) {
+                    LcarsText(
+                        text = message,
+                        style = LocalLcarsTypography.current.telemetry.copy(color = colors.lightBlue),
+                        maxLines = 4,
+                        autoFit = false,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = true,
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),

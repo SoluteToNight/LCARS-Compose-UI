@@ -24,10 +24,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun LcarsMainConsole(
-    leftWingContent: @Composable ColumnScope.() -> Unit,
-    mainDeckContent: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier,
     leftWingWeight: Float = 0.28f,
+    leftWingContent: @Composable ColumnScope.() -> Unit,
+    mainDeckContent: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalLcarsColors.current
     val gap = LocalLcarsSpacing.current.gapStandard

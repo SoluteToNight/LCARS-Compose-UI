@@ -33,3 +33,18 @@ captures/
 # MiMoCode session data
 .mimocode/
 
+# Python virtual environment & cache
+.venv/
+__pycache__/
+*.pyc
+
+# LCARS Miner tools, models, and extracted dataset
+/lcars_miner/
+/lcars-miner/
+/models/
+/output/
+/weights/
+*.pt
+*.engine
+*.onnx
+.agents/

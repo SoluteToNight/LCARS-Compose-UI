@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -187,6 +188,8 @@ fun LcarsTargetScanner(
         0.35f
     }
 
+    val reusablePath = remember { Path() }
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val strokeWidth = 2.dp.toPx()
         repeat(3) { ring ->
@@ -200,18 +203,19 @@ fun LcarsTargetScanner(
             val bottom = top + height
             val segmentLength = (width.coerceAtMost(height) * 0.22f).coerceAtLeast(14.dp.toPx())
             val segmentThickness = strokeWidth
+            val ringColor = color.copy(alpha = alpha)
 
-            listOf(
-                lcarsScannerCornerPolygon(left, top, segmentLength, segmentThickness, CornerPosition.TopStart),
-                lcarsScannerCornerPolygon(right, top, segmentLength, segmentThickness, CornerPosition.TopEnd),
-                lcarsScannerCornerPolygon(left, bottom, segmentLength, segmentThickness, CornerPosition.BottomStart),
-                lcarsScannerCornerPolygon(right, bottom, segmentLength, segmentThickness, CornerPosition.BottomEnd),
-            ).forEach { cornerPath ->
-                drawPath(
-                    path = cornerPath,
-                    color = color.copy(alpha = alpha),
-                )
-            }
+            reusablePath.buildScannerCornerPolygon(left, top, segmentLength, segmentThickness, CornerPosition.TopStart)
+            drawPath(path = reusablePath, color = ringColor)
+
+            reusablePath.buildScannerCornerPolygon(right, top, segmentLength, segmentThickness, CornerPosition.TopEnd)
+            drawPath(path = reusablePath, color = ringColor)
+
+            reusablePath.buildScannerCornerPolygon(left, bottom, segmentLength, segmentThickness, CornerPosition.BottomStart)
+            drawPath(path = reusablePath, color = ringColor)
+
+            reusablePath.buildScannerCornerPolygon(right, bottom, segmentLength, segmentThickness, CornerPosition.BottomEnd)
+            drawPath(path = reusablePath, color = ringColor)
         }
     }
 }
@@ -223,13 +227,14 @@ private enum class CornerPosition {
     BottomEnd,
 }
 
-private fun lcarsScannerCornerPolygon(
+private fun Path.buildScannerCornerPolygon(
     x: Float,
     y: Float,
     length: Float,
     thickness: Float,
     position: CornerPosition,
-): Path = Path().apply {
+) {
+    reset()
     when (position) {
         CornerPosition.TopStart -> {
             moveTo(x, y)

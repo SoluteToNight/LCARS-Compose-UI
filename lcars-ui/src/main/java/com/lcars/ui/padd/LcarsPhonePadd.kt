@@ -240,10 +240,16 @@ fun LcarsPaddHeader(
     }
 }
 
+private val PillShape = RoundedCornerShape(percent = 50)
+private val LeftCapShape = RoundedCornerShape(topStartPercent = 50, bottomStartPercent = 50)
+private val RightCapShape = RoundedCornerShape(topEndPercent = 50, bottomEndPercent = 50)
+private val RectShape = RoundedCornerShape(0.dp)
+private val DefaultPaddBlocks = listOf("01", "02", "03", "04")
+
 @Composable
 fun LcarsPaddSideRail(
     modifier: Modifier = Modifier,
-    blocks: List<String> = listOf("01", "02", "03", "04"),
+    blocks: List<String> = DefaultPaddBlocks,
 ) {
     val colors = LocalLcarsColors.current
     val metrics = LocalLcarsPhonePaddMetrics.current
@@ -315,16 +321,10 @@ fun LcarsPaddControl(
     val metrics = LocalLcarsPhonePaddMetrics.current
     val soundService = LocalLcarsSoundService.current
     val controlShape = when (shape) {
-        LcarsPaddControlShape.Pill -> RoundedCornerShape(percent = 50)
-        LcarsPaddControlShape.LeftCap -> RoundedCornerShape(
-            topStartPercent = 50,
-            bottomStartPercent = 50,
-        )
-        LcarsPaddControlShape.RightCap -> RoundedCornerShape(
-            topEndPercent = 50,
-            bottomEndPercent = 50,
-        )
-        LcarsPaddControlShape.Rectangle -> RoundedCornerShape(0.dp)
+        LcarsPaddControlShape.Pill -> PillShape
+        LcarsPaddControlShape.LeftCap -> LeftCapShape
+        LcarsPaddControlShape.RightCap -> RightCapShape
+        LcarsPaddControlShape.Rectangle -> RectShape
     }
 
     Box(
@@ -332,18 +332,21 @@ fun LcarsPaddControl(
             .defaultMinSize(minHeight = metrics.controlHeight)
             .clip(controlShape)
             .background(color)
-            .clickable(enabled = enabled, role = Role.Button, onClick = {
-                soundService.playClick()
-                onClick()
-            })
-            .alpha(if (enabled) 1f else 0f)
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClick = {
+                    soundService.playClick()
+                    onClick()
+                },
+            )
+            .alpha(if (enabled) 1f else 0.38f)
             .padding(horizontal = metrics.panelPadding, vertical = 5.dp),
         contentAlignment = Alignment.BottomEnd,
     ) {
         LcarsText(
             text = text,
             style = LocalLcarsTypography.current.button.copy(color = contentColor),
-            minFontSize = 9.sp,
         )
     }
 }

@@ -8,6 +8,7 @@ import com.lcars.ui.scene.*
 import com.lcars.ui.padd.*
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 enum class LcarsLabelAlign {
     Start,
@@ -168,3 +170,76 @@ fun LcarsBar(
         }
     }
 }
+
+/**
+ * LCARS Cutout Horizontal Rail (Slot API).
+ *
+ * Renders a segmented horizontal beam with a clean cutout gap for arbitrary Compose content,
+ * featuring asymmetric or symmetric cap shapes (such as a rounded right end-cap).
+ *
+ * Architecture:
+ * - Start Segment: Solid color block, optionally with [startCap] (start pill cap).
+ * - Content Slot: Centered or custom-aligned cutout on pure black background.
+ * - End Segment: Solid color block, optionally with [endCap] (end pill cap).
+ */
+@Composable
+fun LcarsCutoutBar(
+    modifier: Modifier = Modifier,
+    color: Color = LocalLcarsColors.current.framePrimary,
+    height: Dp = LocalLcarsSpacing.current.barHeight,
+    startWeight: Float = 1f,
+    endWeight: Float? = null,
+    endWidth: Dp? = null,
+    startCap: Boolean = false,
+    endCap: Boolean = true,
+    gap: Dp = LocalLcarsSpacing.current.gapStandard,
+    content: @Composable () -> Unit,
+) {
+    val colors = LocalLcarsColors.current
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .background(colors.background),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(gap),
+    ) {
+        // 1. Start Segment (e.g. continuing from elbow)
+        Box(
+            modifier = Modifier
+                .weight(startWeight.coerceAtLeast(0.01f))
+                .fillMaxHeight()
+                .background(
+                    color = color,
+                    shape = if (startCap) LcarsTheme.shapes.startCap else LcarsTheme.shapes.rectangle,
+                ),
+        )
+
+        // 2. Center Cutout Content Slot (Caller controls arbitrary Compose UI)
+        Box(
+            modifier = Modifier.padding(horizontal = (gap / 2f).coerceAtLeast(2.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+
+        // 3. End Segment (e.g. endCap pill cap)
+        val endModifier = when {
+            endWidth != null -> Modifier.width(endWidth)
+            endWeight != null -> Modifier.weight(endWeight.coerceAtLeast(0.01f))
+            endCap -> Modifier.width(height * 1.5f)
+            else -> Modifier.weight(1f)
+        }
+
+        Box(
+            modifier = endModifier
+                .fillMaxHeight()
+                .background(
+                    color = color,
+                    shape = if (endCap) LcarsTheme.shapes.endCap else LcarsTheme.shapes.rectangle,
+                ),
+        )
+    }
+}
+

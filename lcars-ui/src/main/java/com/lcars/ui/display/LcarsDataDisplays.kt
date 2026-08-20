@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
+@androidx.compose.runtime.Immutable
 data class LcarsLogEntry(
     val message: String,
     val severity: LcarsLogSeverity = LcarsLogSeverity.Info,

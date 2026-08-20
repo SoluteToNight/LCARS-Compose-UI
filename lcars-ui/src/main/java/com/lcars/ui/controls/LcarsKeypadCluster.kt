@@ -31,6 +31,7 @@ import com.lcars.ui.theme.LocalLcarsSpacing
 import com.lcars.ui.theme.LocalLcarsTypography
 import com.lcars.ui.theme.keypadRhythm
 
+@androidx.compose.runtime.Immutable
 data class LcarsKeypadItem(
     val code: String,
     val label: String = "",

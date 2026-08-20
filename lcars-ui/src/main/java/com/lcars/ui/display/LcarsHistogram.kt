@@ -29,6 +29,7 @@ import com.lcars.ui.theme.LocalLcarsColors
 import com.lcars.ui.theme.LocalLcarsTypography
 import com.lcars.ui.theme.keypadRhythm
 
+@androidx.compose.runtime.Immutable
 data class LcarsHistogramBar(
     val code: String,
     val valueFraction: Float, // 0f..1f

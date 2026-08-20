@@ -42,6 +42,7 @@ enum class LcarsStarChartMode {
     Inspection,
 }
 
+@androidx.compose.runtime.Immutable
 data class LcarsStar(
     val label: String,
     val x: Float,
@@ -346,40 +347,81 @@ private fun StarChartCanvas(
                     style = Stroke(width = 3.dp.toPx()),
                 )
 
-                // 8-Direction Adaptive Placement Candidates (Right -> Left -> Bottom -> Top -> Diagonal corners)
-                val candidateRects = listOf(
-                    // 1. Right (Standard preferred)
-                    Rect(center.x + selectSize / 2f + selectMargin, center.y - textH / 2f, center.x + selectSize / 2f + selectMargin + textW, center.y + textH / 2f),
-                    // 2. Left (When right edge is crowded or out-of-bounds)
-                    Rect(center.x - selectSize / 2f - selectMargin - textW, center.y - textH / 2f, center.x - selectSize / 2f - selectMargin, center.y + textH / 2f),
-                    // 3. Bottom
-                    Rect(center.x - textW / 2f, center.y + selectSize / 2f + 4.dp.toPx(), center.x + textW / 2f, center.y + selectSize / 2f + 4.dp.toPx() + textH),
-                    // 4. Top
-                    Rect(center.x - textW / 2f, center.y - selectSize / 2f - 4.dp.toPx() - textH, center.x + textW / 2f, center.y - selectSize / 2f - 4.dp.toPx()),
-                    // 5. Top-Right
-                    Rect(center.x + selectSize / 2f + 2.dp.toPx(), center.y - selectSize / 2f - textH, center.x + selectSize / 2f + 2.dp.toPx() + textW, center.y - selectSize / 2f),
-                    // 6. Top-Left
-                    Rect(center.x - selectSize / 2f - 2.dp.toPx() - textW, center.y - selectSize / 2f - textH, center.x - selectSize / 2f - 2.dp.toPx(), center.y - selectSize / 2f),
-                    // 7. Bottom-Right
-                    Rect(center.x + selectSize / 2f + 2.dp.toPx(), center.y + selectSize / 2f, center.x + selectSize / 2f + 2.dp.toPx() + textW, center.y + selectSize / 2f + textH),
-                    // 8. Bottom-Left
-                    Rect(center.x - selectSize / 2f - 2.dp.toPx() - textW, center.y + selectSize / 2f, center.x - selectSize / 2f - 2.dp.toPx(), center.y + selectSize / 2f + textH),
-                )
-
+                // 8-Direction Adaptive Placement without DrawScope object allocations
                 val paddingEdge = 6.dp.toPx()
-                val bestPlacement = candidateRects.firstOrNull { r ->
-                    r.left >= paddingEdge &&
-                    r.right <= size.width - paddingEdge &&
-                    r.top >= paddingEdge &&
-                    r.bottom <= size.height - paddingEdge &&
-                    acceptedLabels.none { it.overlaps(r.inflate(6.dp.toPx())) }
-                } ?: candidateRects.first().let { r ->
-                    // Fallback clamp if all positions have crowding
-                    val clampedLeft = r.left.coerceIn(paddingEdge, (size.width - textW - paddingEdge).coerceAtLeast(paddingEdge))
-                    val clampedTop = r.top.coerceIn(paddingEdge, (size.height - textH - paddingEdge).coerceAtLeast(paddingEdge))
-                    Rect(clampedLeft, clampedTop, clampedLeft + textW, clampedTop + textH)
+                val minX = paddingEdge
+                val maxX = size.width - paddingEdge
+                val minY = paddingEdge
+                val maxY = size.height - paddingEdge
+
+                var bestLeft = Float.NaN
+                var bestTop = Float.NaN
+
+                for (dir in 0..7) {
+                    val candLeft: Float
+                    val candTop: Float
+                    when (dir) {
+                        0 -> { // 1. Right (Standard preferred)
+                            candLeft = center.x + selectSize / 2f + selectMargin
+                            candTop = center.y - textH / 2f
+                        }
+                        1 -> { // 2. Left
+                            candLeft = center.x - selectSize / 2f - selectMargin - textW
+                            candTop = center.y - textH / 2f
+                        }
+                        2 -> { // 3. Bottom
+                            candLeft = center.x - textW / 2f
+                            candTop = center.y + selectSize / 2f + 4.dp.toPx()
+                        }
+                        3 -> { // 4. Top
+                            candLeft = center.x - textW / 2f
+                            candTop = center.y - selectSize / 2f - 4.dp.toPx() - textH
+                        }
+                        4 -> { // 5. Top-Right
+                            candLeft = center.x + selectSize / 2f + 2.dp.toPx()
+                            candTop = center.y - selectSize / 2f - textH
+                        }
+                        5 -> { // 6. Top-Left
+                            candLeft = center.x - selectSize / 2f - 2.dp.toPx() - textW
+                            candTop = center.y - selectSize / 2f - textH
+                        }
+                        6 -> { // 7. Bottom-Right
+                            candLeft = center.x + selectSize / 2f + 2.dp.toPx()
+                            candTop = center.y + selectSize / 2f
+                        }
+                        else -> { // 8. Bottom-Left
+                            candLeft = center.x - selectSize / 2f - 2.dp.toPx() - textW
+                            candTop = center.y + selectSize / 2f
+                        }
+                    }
+                    val candRight = candLeft + textW
+                    val candBottom = candTop + textH
+
+                    if (candLeft >= minX && candRight <= maxX && candTop >= minY && candBottom <= maxY) {
+                        val pad = 6.dp.toPx()
+                        val overlaps = acceptedLabels.any { placed ->
+                            val pLeft = placed.left - pad
+                            val pTop = placed.top - pad
+                            val pRight = placed.right + pad
+                            val pBottom = placed.bottom + pad
+                            !(candRight <= pLeft || candLeft >= pRight || candBottom <= pTop || candTop >= pBottom)
+                        }
+                        if (!overlaps) {
+                            bestLeft = candLeft
+                            bestTop = candTop
+                            break
+                        }
+                    }
                 }
 
+                if (bestLeft.isNaN()) {
+                    val r0Left = center.x + selectSize / 2f + selectMargin
+                    val r0Top = center.y - textH / 2f
+                    bestLeft = r0Left.coerceIn(paddingEdge, (size.width - textW - paddingEdge).coerceAtLeast(paddingEdge))
+                    bestTop = r0Top.coerceIn(paddingEdge, (size.height - textH - paddingEdge).coerceAtLeast(paddingEdge))
+                }
+
+                val bestPlacement = Rect(bestLeft, bestTop, bestLeft + textW, bestTop + textH)
                 acceptedLabels += bestPlacement
                 drawRect(
                     color = Color.Black,

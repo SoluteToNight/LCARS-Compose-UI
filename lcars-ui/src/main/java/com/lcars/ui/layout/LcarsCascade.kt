@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.delay
 
 /**
@@ -103,9 +104,7 @@ fun LcarsCascadeContainer(
  */
 fun Modifier.lcarsCascade(
     index: Int,
-): Modifier = this.then(
-    Modifier.alpha(1f) // fallback
-)
+): Modifier = this
 
 @Composable
 fun Modifier.lcarsCascadeItem(
@@ -118,6 +117,8 @@ fun Modifier.lcarsCascadeItem(
         return this
     }
 
-    val visible = cascadeState.activeStep >= index
-    return this.alpha(if (visible) 1f else 0f)
+    return this.graphicsLayer {
+        val visible = cascadeState.activeStep >= index
+        alpha = if (visible) 1f else 0f
+    }
 }

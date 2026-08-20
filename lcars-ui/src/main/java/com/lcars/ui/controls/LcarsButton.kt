@@ -49,6 +49,7 @@ fun LcarsButton(
     color: Color = LocalLcarsColors.current.commandPrimary,
     contentColor: Color = Color.Black,
     shape: LcarsButtonShape = LcarsButtonShape.Pill,
+    alignment: Alignment = Alignment.BottomEnd,
     alertLevel: LcarsAlertLevel? = null,
     enabled: Boolean = true,
     role: Role = Role.Button,
@@ -115,6 +116,30 @@ fun LcarsButton(
         LcarsButtonShape.Rectangle -> LcarsTheme.shapes.rectangle
     }
 
+    // 1. Horizontal padding with Shape-dependent arc compensation:
+    // Left arc (Pill, BlockStart) requires 16dp to avoid round edge cut; square left requires 10dp.
+    // Right arc (Pill, BlockEnd) requires 16dp to avoid round edge cut; square right requires 10dp.
+    val startPadding = when (shape) {
+        LcarsButtonShape.Pill, LcarsButtonShape.BlockStart -> 16.dp
+        LcarsButtonShape.BlockEnd, LcarsButtonShape.Rectangle -> 10.dp
+    }
+    val endPadding = when (shape) {
+        LcarsButtonShape.Pill, LcarsButtonShape.BlockEnd -> 16.dp
+        LcarsButtonShape.BlockStart, LcarsButtonShape.Rectangle -> 10.dp
+    }
+
+    // 2. Vertical padding respecting vertical alignment:
+    val topPadding = when (alignment) {
+        Alignment.TopStart, Alignment.TopCenter, Alignment.TopEnd -> 6.dp
+        Alignment.CenterStart, Alignment.Center, Alignment.CenterEnd -> 0.dp
+        else -> 0.dp // BottomStart, BottomCenter, BottomEnd
+    }
+    val bottomPadding = when (alignment) {
+        Alignment.TopStart, Alignment.TopCenter, Alignment.TopEnd -> 0.dp
+        Alignment.CenterStart, Alignment.Center, Alignment.CenterEnd -> 0.dp
+        else -> 6.dp // BottomStart, BottomCenter, BottomEnd
+    }
+
     Box(
         modifier = modifier
             .defaultMinSize(minWidth = minWidth, minHeight = maxOf(minHeight, 48.dp))
@@ -134,8 +159,13 @@ fun LcarsButton(
                 selected?.let { this.selected = it }
             }
             .alpha(if (enabled) 1f else 0.38f)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        contentAlignment = Alignment.BottomEnd,
+            .padding(
+                start = startPadding,
+                end = endPadding,
+                top = topPadding,
+                bottom = bottomPadding,
+            ),
+        contentAlignment = alignment,
     ) {
         LcarsText(
             text = text,

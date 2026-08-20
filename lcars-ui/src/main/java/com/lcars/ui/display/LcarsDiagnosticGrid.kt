@@ -31,9 +31,9 @@ import com.lcars.ui.theme.rememberLcarsSmoothPulse
  */
 @Composable
 fun LcarsDiagnosticGrid(
+    modifier: Modifier = Modifier,
     title: String = "LEVEL 3 DIAGNOSTIC SCAN",
     subtitle: String = "OPTICAL SUBPROCESSOR",
-    modifier: Modifier = Modifier,
     matrixRows: Int = 6,
     matrixColumns: Int = 4,
     hasAlertZone: Boolean = true,

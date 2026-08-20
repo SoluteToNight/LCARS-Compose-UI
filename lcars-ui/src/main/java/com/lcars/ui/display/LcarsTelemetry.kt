@@ -35,6 +35,7 @@ enum class LcarsTelemetryLayout {
     Inline,
 }
 
+@androidx.compose.runtime.Immutable
 data class LcarsTelemetryEntry(
     val label: String,
     val value: String,

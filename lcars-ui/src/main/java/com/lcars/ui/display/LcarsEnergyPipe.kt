@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -170,81 +171,75 @@ fun LcarsReactantInjector(
                     .weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Left Nozzle Funnel & Bypass Pipes (Canvas)
-                Canvas(
+                // 1. Left Nozzle Funnel & Bypass Pipes (Cached Canvas Paths)
+                Spacer(
                     modifier = Modifier
                         .width(110.dp)
                         .fillMaxHeight()
-                ) {
-                    val w = size.width
-                    val h = size.height
+                        .drawWithCache {
+                            val w = size.width
+                            val h = size.height
+                            val pipeStroke = 8.dp.toPx()
+                            val loopPath = Path().apply {
+                                moveTo(w * 0.4f, h * 0.35f)
+                                lineTo(w * 0.4f, h * 0.12f)
+                                lineTo(w, h * 0.12f)
+                                moveTo(w * 0.4f, h * 0.65f)
+                                lineTo(w * 0.4f, h * 0.88f)
+                                lineTo(w, h * 0.88f)
+                            }
+                            val nozzlePath = Path().apply {
+                                moveTo(0f, h * 0.15f)
+                                lineTo(w * 0.38f, h * 0.32f)
+                                lineTo(w * 0.38f, h * 0.68f)
+                                lineTo(0f, h * 0.85f)
+                                close()
+                            }
+                            val nozzleBrush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    conduitColor.copy(alpha = 0.3f),
+                                    conduitColor,
+                                    Color.White.copy(alpha = 0.8f),
+                                    conduitColor,
+                                ),
+                                startX = 0f,
+                                endX = w * 0.38f,
+                            )
+                            val bypassColor = conduitColor.copy(alpha = 0.35f)
+                            val packetRadius = 4.dp.toPx()
+                            val strokeWidthPx = 1.5.dp.toPx()
 
-                    // Draw Upper & Lower Bypass Loops
-                    val pipeStroke = 8.dp.toPx()
-                    val loopPath = Path().apply {
-                        // Upper bypass loop
-                        moveTo(w * 0.4f, h * 0.35f)
-                        lineTo(w * 0.4f, h * 0.12f)
-                        lineTo(w, h * 0.12f)
-
-                        // Lower bypass loop
-                        moveTo(w * 0.4f, h * 0.65f)
-                        lineTo(w * 0.4f, h * 0.88f)
-                        lineTo(w, h * 0.88f)
-                    }
-
-                    drawPath(
-                        path = loopPath,
-                        color = conduitColor.copy(alpha = 0.35f),
-                        style = Stroke(width = pipeStroke)
-                    )
-
-                    // Draw Flowing Packets on Bypass
-                    val flowFrac = if (direction == LcarsFlowDirection.LeftToRight) phase else (1f - phase)
-                    val flowX = (flowFrac * w * 0.6f) + w * 0.4f
-                    drawCircle(
-                        color = Color.White,
-                        radius = 4.dp.toPx(),
-                        center = Offset(flowX.coerceIn(w * 0.4f, w), h * 0.12f)
-                    )
-                    drawCircle(
-                        color = Color.White,
-                        radius = 4.dp.toPx(),
-                        center = Offset(flowX.coerceIn(w * 0.4f, w), h * 0.88f)
-                    )
-
-                    // Draw Left Expansion Funnel / Nozzle
-                    val nozzlePath = Path().apply {
-                        moveTo(0f, h * 0.15f)
-                        lineTo(w * 0.38f, h * 0.32f)
-                        lineTo(w * 0.38f, h * 0.68f)
-                        lineTo(0f, h * 0.85f)
-                        close()
-                    }
-
-                    // Shimmer gradient across nozzle
-                    val nozzleBrush = Brush.horizontalGradient(
-                        colors = listOf(
-                            conduitColor.copy(alpha = 0.3f),
-                            conduitColor,
-                            Color.White.copy(alpha = 0.8f),
-                            conduitColor
-                        ),
-                        startX = 0f,
-                        endX = w * 0.38f
-                    )
-
-                    drawPath(
-                        path = nozzlePath,
-                        brush = nozzleBrush,
-                        style = Fill
-                    )
-                    drawPath(
-                        path = nozzlePath,
-                        color = conduitColor,
-                        style = Stroke(width = 1.5.dp.toPx())
-                    )
-                }
+                            onDrawBehind {
+                                drawPath(
+                                    path = loopPath,
+                                    color = bypassColor,
+                                    style = Stroke(width = pipeStroke),
+                                )
+                                val flowFrac = if (direction == LcarsFlowDirection.LeftToRight) phase else (1f - phase)
+                                val flowX = (flowFrac * w * 0.6f) + w * 0.4f
+                                drawCircle(
+                                    color = Color.White,
+                                    radius = packetRadius,
+                                    center = Offset(flowX.coerceIn(w * 0.4f, w), h * 0.12f),
+                                )
+                                drawCircle(
+                                    color = Color.White,
+                                    radius = packetRadius,
+                                    center = Offset(flowX.coerceIn(w * 0.4f, w), h * 0.88f),
+                                )
+                                drawPath(
+                                    path = nozzlePath,
+                                    brush = nozzleBrush,
+                                    style = Fill,
+                                )
+                                drawPath(
+                                    path = nozzlePath,
+                                    color = conduitColor,
+                                    style = Stroke(width = strokeWidthPx),
+                                )
+                            }
+                        }
+                )
 
                 Spacer(modifier = Modifier.width(6.dp))
 

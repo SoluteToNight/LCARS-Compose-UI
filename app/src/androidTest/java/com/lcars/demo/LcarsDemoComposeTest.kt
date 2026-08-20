@@ -36,15 +36,12 @@ class LcarsDemoComposeTest {
             )
         }
 
-        composeRule.onNodeWithText("LCARS COMPOSE UI").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Select weather console").performClick()
-        composeRule.onNodeWithText("OPEN WEATHER CONSOLE").assertIsDisplayed().performClick()
-        composeRule.onNodeWithContentDescription("Select padd variants").performClick()
-        composeRule.onNodeWithText("OPEN PADD VARIANTS").assertIsDisplayed().performClick()
-        composeRule.onNodeWithContentDescription("Select component catalog").performClick()
-        composeRule.onNodeWithText("OPEN COMPONENT CATALOG").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("LCARS DEMOHUB").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Select WEATHER CONSOLE").performClick()
+        composeRule.onNodeWithText("INITIALIZE WEATHER CONSOLE").assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Select PADD VARIANT TERMINAL").performClick()
+        composeRule.onNodeWithText("INITIALIZE PADD VARIANT TERMINAL").assertIsDisplayed().performClick()
 
-        assertEquals(1, catalogLaunches)
         assertEquals(1, weatherLaunches)
         assertEquals(1, paddLaunches)
     }

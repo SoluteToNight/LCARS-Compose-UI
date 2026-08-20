@@ -49,6 +49,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.disabled
@@ -57,6 +58,9 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -366,7 +370,6 @@ fun LcarsSegmentedSlider(
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
     val total = totalSegments.coerceAtLeast(1)
-    var width by remember { mutableStateOf(1) }
     val soundService = LocalLcarsSoundService.current
     val currentValue by rememberUpdatedState(value)
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -399,22 +402,21 @@ fun LcarsSegmentedSlider(
                     disabled()
                 }
             }
-            .onGloballyPositioned { coordinates ->
-                width = coordinates.size.width.coerceAtLeast(1)
-            }
-            .then(if (enabled) Modifier.pointerInput(total, width) {
+            .then(if (enabled) Modifier.pointerInput(total) {
                 detectTapGestures { offset ->
-                    val fraction = (offset.x / width).coerceIn(0f, 1f)
+                    val trackWidth = size.width.coerceAtLeast(1)
+                    val fraction = (offset.x / trackWidth).coerceIn(0f, 1f)
                     updateValue((fraction * total).roundToInt())
                     onValueChangeFinished?.invoke()
                 }
             } else Modifier)
-            .then(if (enabled) Modifier.pointerInput(total, width) {
+            .then(if (enabled) Modifier.pointerInput(total) {
                 detectHorizontalDragGestures(onDragEnd = {
                     onValueChangeFinished?.invoke()
                 }) { change, _ ->
                     change.consume()
-                    val fraction = (change.position.x / width).coerceIn(0f, 1f)
+                    val trackWidth = size.width.coerceAtLeast(1)
+                    val fraction = (change.position.x / trackWidth).coerceIn(0f, 1f)
                     updateValue((fraction * total).roundToInt())
                 }
             } else Modifier)
@@ -476,10 +478,11 @@ fun LcarsDataCascade(
     cycleMillis: Int = 6000,
 ) {
     val colors = LocalLcarsColors.current
+    val typography = LocalLcarsTypography.current
     val motionActive = running && LcarsTheme.motionMode == LcarsMotionMode.System
 
     val transition = rememberInfiniteTransition(label = "LcarsDataCascade")
-    val phase by if (motionActive) {
+    val phaseState = if (motionActive) {
         transition.animateFloat(
             initialValue = 0f,
             targetValue = 100f,
@@ -490,47 +493,86 @@ fun LcarsDataCascade(
             label = "DataCascadePhase",
         )
     } else {
-        transition.animateFloat(
-            initialValue = 50f,
-            targetValue = 50f,
-            animationSpec = infiniteRepeatable(animation = tween(1000)),
-            label = "DataCascadePhaseStatic",
+        null
+    }
+
+    val textMeasurer = rememberTextMeasurer()
+    val textStyle = remember(typography) {
+        typography.labelSmall.copy(
+            fontSize = 13.sp,
+            lineHeight = 15.sp,
         )
     }
 
-    Row(
+    val measuredColumns = remember(columns, textStyle) {
+        columns.map { rows ->
+            rows.map { text ->
+                textMeasurer.measure(text = lcarsLabel(text), style = textStyle)
+            }
+        }
+    }
+
+    val density = LocalDensity.current
+    val (totalWidthDp, totalHeightDp) = remember(measuredColumns, density) {
+        with(density) {
+            val colGapPx = 12.dp.toPx()
+            val rowGapPx = 2.dp.toPx()
+            var totalW = 0f
+            var maxH = 0f
+            measuredColumns.forEachIndexed { idx, rows ->
+                var colW = 0f
+                var colH = 0f
+                rows.forEachIndexed { rIdx, m ->
+                    if (m.size.width.toFloat() > colW) colW = m.size.width.toFloat()
+                    colH += m.size.height.toFloat() + (if (rIdx > 0) rowGapPx else 0f)
+                }
+                totalW += colW + (if (idx > 0) colGapPx else 0f)
+                if (colH > maxH) maxH = colH
+            }
+            (totalW.toDp() + 16.dp) to (maxH.toDp() + 12.dp)
+        }
+    }
+
+    Canvas(
         modifier = modifier
+            .size(totalWidthDp, totalHeightDp)
             .background(colors.panel)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        columns.forEachIndexed { colIndex, rows ->
-            Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                rows.forEachIndexed { rowIndex, text ->
-                    val textColor = if (!motionActive) {
-                        if (rowIndex < 4) accentColor else highlightColor
-                    } else {
-                        resolveDataCascadeColor(
-                            phase = (phase + colIndex * 15f + rowIndex * 12f) % 100f,
-                            rowIndex = rowIndex,
-                            accentColor = accentColor,
-                            highlightColor = highlightColor,
-                            dimColor = colors.background,
-                        )
-                    }
-                    LcarsText(
-                        text = text,
-                        style = LocalLcarsTypography.current.labelSmall.copy(
-                            color = textColor,
-                            fontSize = 13.sp,
-                            lineHeight = 15.sp,
-                        ),
-                        maxLines = 1,
+        val colGap = 12.dp.toPx()
+        val rowGap = 2.dp.toPx()
+        val currentPhase = phaseState?.value ?: 50f
+
+        var currentX = 0f
+        measuredColumns.forEachIndexed { colIndex, rows ->
+            var currentY = 0f
+            var maxColWidth = 0f
+
+            rows.forEachIndexed { rowIndex, measuredResult ->
+                val textColor = if (!motionActive) {
+                    if (rowIndex < 4) accentColor else highlightColor
+                } else {
+                    resolveDataCascadeColor(
+                        phase = (currentPhase + colIndex * 15f + rowIndex * 12f) % 100f,
+                        rowIndex = rowIndex,
+                        accentColor = accentColor,
+                        highlightColor = highlightColor,
+                        dimColor = colors.background,
                     )
                 }
+
+                drawText(
+                    textLayoutResult = measuredResult,
+                    topLeft = Offset(currentX, currentY),
+                    color = textColor,
+                )
+
+                val itemHeight = measuredResult.size.height.toFloat()
+                val itemWidth = measuredResult.size.width.toFloat()
+                if (itemWidth > maxColWidth) maxColWidth = itemWidth
+                currentY += itemHeight + rowGap
             }
+            currentX += maxColWidth + colGap
         }
     }
 }
